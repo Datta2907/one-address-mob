@@ -5,6 +5,7 @@ import { useFonts, LibreFranklin_400Regular } from '@expo-google-fonts/libre-fra
 import Variables from './common/constants';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { HomeComponent } from './screens/home';
 
 export default function App() {
   const Stack = createNativeStackNavigator();
@@ -16,6 +17,7 @@ export default function App() {
   if (!fontsLoaded && !fontError) {
     return null;
   }
+
   return (
     <View
       style={styles.mainContainer}>
@@ -26,6 +28,10 @@ export default function App() {
             name='Login'
             component={LoginComponent}
             options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name='Home'
+            component={HomeComponent}
           />
         </Stack.Navigator>
       </NavigationContainer>

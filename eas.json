@@ -5,6 +5,10 @@
             "distribution": "internal",
             "android": {
                 "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_ANDROID_CLIENT_ID": "821851695738-5dmb6e9fn2d41p21lid3kv6d2blip85g.apps.googleusercontent.com",
+                "EXPO_PUBLIC_WEB_CLIENT_ID": "821851695738-u2035r45nhfncldhdmm7kkf6g8un9k0t.apps.googleusercontent.com"
             }
         },
         "preview": {

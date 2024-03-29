@@ -1,13 +1,16 @@
-import { View, TextInput, Text, StyleSheet, Keyboard, KeyboardAvoidingView, ScrollView } from "react-native"
+import { View, TextInput, Text, StyleSheet, Keyboard, KeyboardAvoidingView, ScrollView, Alert, ToastAndroid } from "react-native"
 import CommonButton from "../components/common-button"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MaterialIcons, Ionicons, FontAwesome5, AntDesign, Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
 import Variables from "../common/constants";
 import SelectDropdown from "react-native-select-dropdown";
 import SuccessAnimation from "../components/success-animation";
 import { loginWithPassword, sendVerificationCode, verifyCode, registerUser } from "../services/auth";
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'
 
 const screens = {
+    signUp: "signUp",
+    signIn: "signIn",
     login: "login",
     enterEmail: "enterEmail",
     verifyCode: "verifyCode",
@@ -19,8 +22,10 @@ const screens = {
 
 const passwordErrorMessage = 'Password Must Contain \n 1.Atleast one capital alphabet.\n 2.Atleast one lower alphabet.\n 3.Atleast one number.\n 4.Atleast one special character.\n 5.A length of range [8-15]';
 
-export function LoginComponent() {
+export function LoginComponent({ navigation }) {
+    let [userInfo, setUserInfo] = useState(null);
     let [currentTab, setCurrentTab] = useState(screens.login);
+    let [parentTab, setParentTab] = useState(screens.signIn);
     // login screen variables
     let [loginEmail, setLoginEmail] = useState('');
     let [loginEmailError, setLoginEmailError] = useState('');
@@ -45,32 +50,45 @@ export function LoginComponent() {
     let [verifyPassword, setVerifyPassword] = useState('');
     let [passwordMatchError, setPasswordMatchError] = useState('');
 
-    function signIn(id) {
-        setCurrentTab(screens.login);
-        setCommunity('');
-        setCommunityError('');
-        setOauthEmail('');
-        setOauthEmailError('');
-        setOtp('');
-        setOtpError('');
-        setFirstName('');
-        setFirstNameError('');
-        setLastName('');
-        setLastNameError('');
-        setRole('');
-        setRoleError('');
-        setRegisterPassword('');
-        setRegisterPasswordError('');
-        setVerifyPassword('');
-        setPasswordMatchError('');
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
+            offlineAccess: true,
+        })
+    }, [])
+
+    function signIn() {
+        if (currentTab != screens.loading && currentTab != screens.success) {
+            setCurrentTab(screens.login);
+            setParentTab(screens.signIn);
+            setCommunity('');
+            setCommunityError('');
+            setOauthEmail('');
+            setOauthEmailError('');
+            setOtp('');
+            setOtpError('');
+            setFirstName('');
+            setFirstNameError('');
+            setLastName('');
+            setLastNameError('');
+            setRole('');
+            setRoleError('');
+            setRegisterPassword('');
+            setRegisterPasswordError('');
+            setVerifyPassword('');
+            setPasswordMatchError('');
+        }
     }
 
-    function signUp(id) {
-        setCurrentTab(screens.enterEmail);
-        setLoginEmail('');
-        setLoginEmailError('');
-        setLoginPassword('');
-        setLoginPasswordError('');
+    function signUp() {
+        if (currentTab != screens.loading && currentTab != screens.success) {
+            setCurrentTab(screens.enterEmail);
+            setParentTab(screens.signUp);
+            setLoginEmail('');
+            setLoginEmailError('');
+            setLoginPassword('');
+            setLoginPasswordError('');
+        }
     }
 
     function isEmailValid(newText) {
@@ -101,46 +119,59 @@ export function LoginComponent() {
             setCurrentTab(screens.loading);
             const res = await loginWithPassword(email, password);
             if (res.success) {
-                setCurrentTab(screens.otherState);
+                navigation.navigate('Home');
+            } else {
+                Alert.alert(res.message, [{ text: 'OK' }])
             }
         }
-    }
-
-    async function register() {
-        Keyboard.dismiss();
-        roleError == '' && role ? setRoleError('') : setRoleError('Select a role');
-        passwordMatchError == '' && verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
-        firstNameError == '' && firstName ? setFirstNameError('') : setFirstNameError('Invalid First Name');
-        lastNameError == '' && lastName ? setLastNameError('') : setLastNameError('Invalid Last Name');
-        registerPasswordError == '' && registerPassword ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage);
-        if (!roleError && !passwordMatchError && !firstNameError && !lastNameError && !registerPasswordError) {
-            setCurrentTab(screens.loading);
-            const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
-            if (res.success) {
-                setCurrentTab(screens.success);
-                setTimeout(() => {
-                    setCurrentTab(screens.otherState);
-                }, 2000);
-            }
-        }
-    }
-
-    function signUpWithGoogle() {
-        setCurrentTab(screens.loading);
-        setTimeout(() => {
-            setCurrentTab(screens.success);
-        }, 5000);
     }
 
     async function sendCode() {
         Keyboard.dismiss();
         oauthEmailError == '' && oauthEmail ? setOauthEmailError('') : setOauthEmailError('Invalid Email');
         community == '' ? setCommunityError('Select a community') : setCommunityError('');
-        if (community != '' && !oauthEmailError) {
+        if (community != '' && !oauthEmailError && oauthEmail) {
             setCurrentTab(screens.loading);
             const res = await sendVerificationCode(oauthEmail);
             if (res.success) {
                 setCurrentTab(screens.verifyCode);
+            } else {
+                Alert.alert(res.message, [{ text: 'OK' }])
+            }
+        }
+    }
+
+    async function signUpWithGoogle() {
+        try {
+            setCurrentTab(screens.loading);
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+            setUserInfo(userInfo); //need to store in redux
+            console.log(userInfo);
+            if (userInfo) {
+                setCurrentTab(screens.success);
+                //set first name, email according to user details
+                setTimeout(() => {
+                    setCurrentTab(screens.register);
+                }, 3000);
+            }
+        } catch (error) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                // user cancelled the login flow
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                // operation (e.g. sign in) is in progress already
+                Alert.alert('Sign In is already in progress!', [{ text: 'OK' }])
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                Alert.alert('Google Play services is not installed or outdated, Please Update!', [{ text: 'OK' }])
+            } else {
+                signUp();
+                ToastAndroid.showWithGravityAndOffset(
+                    'Something went wrong, please sign up again!',
+                    ToastAndroid.LONG,
+                    ToastAndroid.BOTTOM,
+                    25,
+                    50,
+                );
             }
         }
     }
@@ -152,6 +183,30 @@ export function LoginComponent() {
             if (res.success) {
                 setCurrentTab(screens.register);
                 setOtp('');
+            } else {
+                Alert.alert(res.message, [{ text: 'OK' }])
+            }
+        }
+    }
+
+
+    async function register() {
+        Keyboard.dismiss();
+        roleError == '' && role ? setRoleError('') : setRoleError('Select a role');
+        passwordMatchError == '' && verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
+        firstNameError == '' && firstName ? setFirstNameError('') : setFirstNameError('Invalid First Name');
+        lastNameError == '' && lastName ? setLastNameError('') : setLastNameError('Invalid Last Name');
+        registerPasswordError == '' && registerPassword ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage);
+        const allVariablesExists = role && verifyPassword && firstName && lastName && registerPassword;
+        const allVariablesValid = !roleError && !passwordMatchError && !firstNameError && !lastNameError && !registerPasswordError;
+        if (allVariablesExists && allVariablesValid) {
+            setCurrentTab(screens.loading);
+            const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
+            if (res.success) {
+                setCurrentTab(screens.success);
+                navigation.navigate('Home');
+            } else {
+                Alert.alert(res.message, [{ text: 'OK' }])
             }
         }
     }
@@ -166,14 +221,14 @@ export function LoginComponent() {
                             clicked={signIn}
                             text={'SIGN IN'}
                             id={'SIGN_IN'}
-                            styles={currentTab == screens.login ? styles.tabSelected : styles.pressedItem}
+                            styles={parentTab == screens.signIn ? styles.tabSelected : styles.pressedItem}
                             textStyle={styles.baseText}
                         ></CommonButton>
                         <CommonButton
                             clicked={signUp}
                             text={'SIGN UP'}
                             id={'SIGN_UP'}
-                            styles={currentTab != screens.login ? styles.tabSelected : styles.pressedItem}
+                            styles={parentTab != screens.signIn ? styles.tabSelected : styles.pressedItem}
                             textStyle={styles.baseText}
                         ></CommonButton>
                     </View>
@@ -229,10 +284,10 @@ export function LoginComponent() {
                         : currentTab == screens.enterEmail ?
                             <View style={styles.inputBox}>
                                 <SelectDropdown buttonStyle={styles.dropDown} data={[{ name: "Velama Community", address: "pragathi nagar", state: "telangana" }, { name: "X community", address: "koti", state: "telanagana" }]}
-                                    onSelect={(selectedItem, index) => { console.log(selectedItem, index); setCommunity(selectedItem.name); setCommunityError(''); }}
+                                    onSelect={(selectedItem, index) => { setCommunity(selectedItem.name); setCommunityError(''); }}
                                     defaultButtonText="Select Community"
                                     buttonTextAfterSelection={(selectedItem) => { return selectedItem.name }}
-                                    rowTextForSelection={(selectedItem) => { return selectedItem.name + selectedItem.address }}
+                                    rowTextForSelection={(selectedItem) => { return selectedItem.name }}
                                     search={true}
                                     searchPlaceHolder="Search Here..."
                                     dropdownIconPosition="left"
@@ -499,6 +554,15 @@ const styles = StyleSheet.create({
         color: Variables.colors.white,
         alignItems: "center",
         padding: '7%',
+        borderRadius: 10,
+        flexDirection: 'row',
+        justifyContent: 'center'
+    },
+    resetButton: {
+        backgroundColor: Variables.colors.white,
+        color: Variables.colors.blue,
+        alignItems: "center",
+        padding: '4%',
         borderRadius: 10,
         flexDirection: 'row',
         justifyContent: 'center'
