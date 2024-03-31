@@ -13,9 +13,13 @@ export const registerUser = async (firstName, lastName, role, email, password) =
 //google auth
 
 export const sendVerificationCode = async (email) => {
-    return GET(googleAuthUrl + `send-code/${email}`, null)
+    return GET(googleAuthUrl + 'send-code', { email })
 }
 
 export const verifyCode = async (email, userOtp) => {
     return POST(googleAuthUrl + 'verify-code', { email, userOtp })
+}
+
+export const verifyGoogleIdToken = async (token) => {
+    return GET(googleAuthUrl + `verify-id-token`, { token })
 }

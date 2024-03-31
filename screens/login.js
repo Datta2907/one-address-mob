@@ -6,7 +6,8 @@ import Variables from "../common/constants";
 import SelectDropdown from "react-native-select-dropdown";
 import SuccessAnimation from "../components/success-animation";
 import { loginWithPassword, sendVerificationCode, verifyCode, registerUser } from "../services/auth";
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const screens = {
     signUp: "signUp",
@@ -119,6 +120,7 @@ export function LoginComponent({ navigation }) {
             setCurrentTab(screens.loading);
             const res = await loginWithPassword(email, password);
             if (res.success) {
+                await AsyncStorage.setItem("authToken", res.data.token)
                 navigation.navigate('Home');
             } else {
                 Alert.alert(res.message, [{ text: 'OK' }])
@@ -162,7 +164,7 @@ export function LoginComponent({ navigation }) {
                 // operation (e.g. sign in) is in progress already
                 Alert.alert('Sign In is already in progress!', [{ text: 'OK' }])
             } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-                Alert.alert('Google Play services is not installed or outdated, Please Update!', [{ text: 'OK' }])
+                await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
             } else {
                 signUp();
                 ToastAndroid.showWithGravityAndOffset(
