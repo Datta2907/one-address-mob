@@ -9,8 +9,11 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(async (config) => {
     const authToken = await AsyncStorage.getItem('authToken');
-    const decodedToken = jwtDecode(authToken);
-    const tokenExpired = Date.now() >= decodedToken.exp * 1000 ? true : false;
+    console.log("authToken", authToken);
+    const decodedToken = authToken ? jwtDecode(authToken) : null;
+    console.log("decodedToken", decodedToken);
+    const tokenExpired = decodedToken ? Date.now() >= decodedToken.exp * 1000 ? true : false : true;
+    console.log("tokenexpired", tokenExpired);
     if (tokenExpired) {
         await AsyncStorage.removeItem('authToken');
         delete axiosInstance.defaults.headers.common.Authorization;

@@ -1,8 +1,14 @@
+import { useEffect } from "react"
 import { StyleSheet, Text, View } from "react-native"
+import { getApplicationStatus } from "../services/home"
 
 export const HomeComponent = () => {
-    return <View style={styles.container}>
+    useEffect(async () => {
+        await getApplicationStatus();
+    }, [])
 
+    return <View style={styles.container}>
+        <Text>Application in progress</Text>
     </View>
 }
 

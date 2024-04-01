@@ -1,6 +1,7 @@
 import axiosInstance from './axios.instance';
 
 export const GET = async (url, queryParams) => {
+    queryParams = queryParams || {};
     return (await axiosInstance.get(url, { params: queryParams })).data;
 }
 
