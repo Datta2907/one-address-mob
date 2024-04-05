@@ -28,7 +28,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "node_modules/@expo-google-fonts/libre-franklin/LibreFranklin_400Regular.ttf"
+          ]
+        }
+      ],
       "@react-native-google-signin/google-signin"
     ],
     "extra": {

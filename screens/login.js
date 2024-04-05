@@ -118,10 +118,9 @@ export function LoginComponent({ navigation }) {
         loginPasswordError == '' && loginPassword ? setLoginPasswordError('') : setLoginPasswordError(passwordErrorMessage);
         if (!loginEmailError && !loginPasswordError) {
             setCurrentTab(screens.loading);
-            const res = await loginWithPassword(email, password);
+            const res = await loginWithPassword(loginEmail, loginPassword);
             if (res.success) {
                 await AsyncStorage.setItem("authToken", res.data.token)
-                navigation.navigate('Home');
             } else {
                 Alert.alert(res.message, [{ text: 'OK' }])
             }
