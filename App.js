@@ -7,11 +7,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { HomeComponent } from './screens/home';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFonts, LibreFranklin_600SemiBold_Italic } from '@expo-google-fonts/libre-franklin';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const Stack = createNativeStackNavigator();
   let [isLoggedIn, setIsLoggedIn] = useState(false);
-
   useEffect(() => {
     async function checkLoggedIn() {
       let token = await AsyncStorage.getItem("authToken");
@@ -22,9 +25,23 @@ export default function App() {
     checkLoggedIn();
   }, [])
 
+  let [fontsLoaded] = useFonts({
+    LibreFranklin_600SemiBold_Italic
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <View
-      style={styles.mainContainer}>
+      style={styles.mainContainer} onLayout={onLayoutRootView}>
       <StatusBar style='light' />
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
