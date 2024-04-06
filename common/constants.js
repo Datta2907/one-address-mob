@@ -5,7 +5,7 @@ const Variables = {
         blue: '#333994',
         red: 'red',
     },
-    fontStyle: "LibreFranklin_600SemiBold_Italic"
+    fontStyle: "LibreFranklin_500Medium"
 }
 
 export default Variables;

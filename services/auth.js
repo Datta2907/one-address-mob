@@ -20,6 +20,6 @@ export const verifyCode = async (email, userOtp) => {
     return POST(googleAuthUrl + 'verify-code', { email, userOtp })
 }
 
-export const verifyGoogleIdToken = async (token) => {
-    return GET(googleAuthUrl + `verify-id-token`, { token })
+export const verifyGoogleIdToken = async (idToken, email) => {
+    return GET(googleAuthUrl + `verify-id-token`, { idToken, email })
 }

@@ -1,11 +1,11 @@
 import { View, TextInput, Text, StyleSheet, Keyboard, KeyboardAvoidingView, ScrollView, Alert, ToastAndroid } from "react-native"
 import CommonButton from "../components/common-button"
 import { useEffect, useState } from "react";
-import { MaterialIcons, Ionicons, FontAwesome5, AntDesign, Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons, FontAwesome5, AntDesign, Entypo } from '@expo/vector-icons';
 import Variables from "../common/constants";
 import SelectDropdown from "react-native-select-dropdown";
 import SuccessAnimation from "../components/success-animation";
-import { loginWithPassword, sendVerificationCode, verifyCode, registerUser } from "../services/auth";
+import { loginWithPassword, sendVerificationCode, verifyCode, verifyGoogleIdToken } from "../services/auth";
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -16,14 +16,12 @@ const screens = {
     enterEmail: "enterEmail",
     verifyCode: "verifyCode",
     loading: "loading",
-    success: "success",
-    register: "register",
-    otherState: "otherState"
+    success: "success"
 }
 
 const passwordErrorMessage = 'Password Must Contain \n 1.Atleast one capital alphabet.\n 2.Atleast one lower alphabet.\n 3.Atleast one number.\n 4.Atleast one special character.\n 5.A length of range [8-15]';
 
-export function LoginComponent({ navigation }) {
+export function SignInOrSignUpComponent({ navigation }) {
     let [userInfo, setUserInfo] = useState(null);
     let [currentTab, setCurrentTab] = useState(screens.login);
     let [parentTab, setParentTab] = useState(screens.signIn);
@@ -39,17 +37,6 @@ export function LoginComponent({ navigation }) {
     let [oauthEmailError, setOauthEmailError] = useState('');
     let [otp, setOtp] = useState('');
     let [otpError, setOtpError] = useState('');
-    // register screen variables
-    let [firstName, setFirstName] = useState('');
-    let [firstNameError, setFirstNameError] = useState('');
-    let [lastName, setLastName] = useState('');
-    let [lastNameError, setLastNameError] = useState('');
-    let [role, setRole] = useState('');
-    let [roleError, setRoleError] = useState('');
-    let [registerPassword, setRegisterPassword] = useState('');
-    let [registerPasswordError, setRegisterPasswordError] = useState('');
-    let [verifyPassword, setVerifyPassword] = useState('');
-    let [passwordMatchError, setPasswordMatchError] = useState('');
 
     useEffect(() => {
         GoogleSignin.configure({
@@ -68,16 +55,6 @@ export function LoginComponent({ navigation }) {
             setOauthEmailError('');
             setOtp('');
             setOtpError('');
-            setFirstName('');
-            setFirstNameError('');
-            setLastName('');
-            setLastNameError('');
-            setRole('');
-            setRoleError('');
-            setRegisterPassword('');
-            setRegisterPasswordError('');
-            setVerifyPassword('');
-            setPasswordMatchError('');
         }
     }
 
@@ -106,10 +83,6 @@ export function LoginComponent({ navigation }) {
         } else {
             return false;
         }
-    }
-
-    function validateOnlyLetters(newText) {
-        return !/^[a-z]+$/i.test(newText);
     }
 
     async function login() {
@@ -150,11 +123,16 @@ export function LoginComponent({ navigation }) {
             setUserInfo(userInfo); //need to store in redux
             console.log(userInfo);
             if (userInfo) {
-                setCurrentTab(screens.success);
-                //set first name, email according to user details
-                setTimeout(() => {
-                    setCurrentTab(screens.register);
-                }, 3000);
+                let verifyWithGoogleServer = await verifyGoogleIdToken(userInfo.idToken, userInfo.user.email)
+                if (verifyWithGoogleServer.success) {
+                    //navigate with these details
+                    navigation.navigate('registerUser', {
+                        firstName: userInfo.user.givenName,
+                        lastName: userInfo.user.familyName,
+                        email: userInfo.user.email,
+                        community: community
+                    })
+                }
             }
         } catch (error) {
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -182,30 +160,9 @@ export function LoginComponent({ navigation }) {
             const res = await verifyCode(oauthEmail, otp);
             setCurrentTab(screens.loading);
             if (res.success) {
+                //navigate with current details
                 setCurrentTab(screens.register);
                 setOtp('');
-            } else {
-                Alert.alert(res.message, [{ text: 'OK' }])
-            }
-        }
-    }
-
-
-    async function register() {
-        Keyboard.dismiss();
-        roleError == '' && role ? setRoleError('') : setRoleError('Select a role');
-        passwordMatchError == '' && verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
-        firstNameError == '' && firstName ? setFirstNameError('') : setFirstNameError('Invalid First Name');
-        lastNameError == '' && lastName ? setLastNameError('') : setLastNameError('Invalid Last Name');
-        registerPasswordError == '' && registerPassword ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage);
-        const allVariablesExists = role && verifyPassword && firstName && lastName && registerPassword;
-        const allVariablesValid = !roleError && !passwordMatchError && !firstNameError && !lastNameError && !registerPasswordError;
-        if (allVariablesExists && allVariablesValid) {
-            setCurrentTab(screens.loading);
-            const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
-            if (res.success) {
-                setCurrentTab(screens.success);
-                navigation.navigate('Home');
             } else {
                 Alert.alert(res.message, [{ text: 'OK' }])
             }
@@ -282,7 +239,8 @@ export function LoginComponent({ navigation }) {
                                 hideRippleEffect={styles.hideRippleEffect}
                             ></CommonButton>
                         </View>
-                        : currentTab == screens.enterEmail ?
+                        :
+                        currentTab == screens.enterEmail ?
                             <View style={styles.inputBox}>
                                 <SelectDropdown buttonStyle={styles.dropDown} data={[{ name: "Velama Community", address: "pragathi nagar", state: "telangana" }, { name: "X community", address: "koti", state: "telanagana" }]}
                                     onSelect={(selectedItem, index) => { setCommunity(selectedItem.name); setCommunityError(''); }}
@@ -374,112 +332,18 @@ export function LoginComponent({ navigation }) {
                                         ></SuccessAnimation>
                                     </View>
                                     :
-                                    currentTab == screens.register ?
+                                    currentTab == screens.success ?
+                                        <View style={styles.scrollContainer}>
+                                            <SuccessAnimation
+                                                path={require('../assets/success-green-circle.json')}
+                                                styles={styles.emailVerified}
+                                                autoPlay={true}
+                                                loop={false}
+                                            ></SuccessAnimation>
+                                        </View>
+                                        :
                                         <View>
-                                            <SelectDropdown buttonStyle={styles.dropDown} data={['Developer', 'President', 'Resident', 'Non-Resident', 'NA']}
-                                                onSelect={(selectedItem, index) => { setRole(selectedItem); setRoleError(''); }}
-                                                defaultButtonText="Select Role"
-                                                buttonTextAfterSelection={(selectedItem) => { return selectedItem }}
-                                                rowTextForSelection={(selectedItem) => { return selectedItem }}
-                                                search={true}
-                                                searchPlaceHolder="Search Here..."
-                                                dropdownIconPosition="left"
-                                                renderDropdownIcon={() => { return <MaterialIcons name="work" size={18} color="black" /> }}
-                                                renderSearchInputLeftIcon={() => { return <Ionicons name="search" size={18} color="black" /> }}
-                                            ></SelectDropdown>
-                                            {roleError.length ? <Text style={styles.errorMessage}>{roleError}</Text> : <></>}
-                                            <View style={styles.inputBox}>
-                                                <MaterialCommunityIcons name="account-arrow-left" size={24} color="white" style={styles.icons} />
-                                                <TextInput
-                                                    style={styles.credentialInputs}
-                                                    placeholder="FirstName"
-                                                    placeholderTextColor={Variables.colors.white}
-                                                    autoCapitalize="none"
-                                                    autoComplete="off"
-                                                    autoCorrect={false}
-                                                    multiline={false}
-                                                    selectionColor={Variables.colors.white}
-                                                    keyboardType="ascii-capable"
-                                                    value={firstName}
-                                                    onChangeText={newText => {
-                                                        setFirstName(newText);
-                                                        validateOnlyLetters(newText) ? setFirstNameError('Invalid First Name') : setFirstNameError('')
-                                                    }}
-                                                />
-                                                {firstNameError.length ? <Text style={styles.errorMessage}>{firstNameError}</Text> : <></>}
-                                                <MaterialCommunityIcons name="account-arrow-right" size={24} color="white" style={styles.icons} />
-                                                <TextInput
-                                                    style={styles.credentialInputs}
-                                                    placeholder="LastName"
-                                                    placeholderTextColor={Variables.colors.white}
-                                                    autoCapitalize="none"
-                                                    autoComplete="off"
-                                                    autoCorrect={false}
-                                                    multiline={false}
-                                                    selectionColor={Variables.colors.white}
-                                                    keyboardType="ascii-capable"
-                                                    value={lastName}
-                                                    onChangeText={newText => {
-                                                        setLastName(newText);
-                                                        validateOnlyLetters(newText) ? setLastNameError('Invalid Last Name') : setLastNameError('')
-                                                    }}
-                                                />
-                                                {lastNameError.length ? <Text style={styles.errorMessage}>{lastNameError}</Text> : <></>}
-                                                <FontAwesome5 name="unlock" size={20} color="white" style={styles.icons} />
-                                                <TextInput
-                                                    style={styles.credentialInputs}
-                                                    placeholder="Set New Password"
-                                                    placeholderTextColor={Variables.colors.white}
-                                                    autoCapitalize="none"
-                                                    autoComplete="off"
-                                                    autoCorrect={false}
-                                                    multiline={false}
-                                                    selectionColor={Variables.colors.white}
-                                                    keyboardType="ascii-capable"
-                                                    value={registerPassword}
-                                                    onChangeText={newText => {
-                                                        setRegisterPassword(newText);
-                                                        isPasswordValid(newText) ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage)
-                                                    }}
-                                                />
-                                                {registerPasswordError.length ? <Text style={styles.errorMessage}>{registerPasswordError}</Text> : <></>}
-                                                <FontAwesome5 name="unlock" size={20} color="white" style={styles.icons} />
-                                                <TextInput
-                                                    style={styles.credentialInputs}
-                                                    placeholder="Re-type New Password"
-                                                    placeholderTextColor={Variables.colors.white}
-                                                    autoCapitalize="none"
-                                                    autoComplete="off"
-                                                    autoCorrect={false}
-                                                    multiline={false}
-                                                    selectionColor={Variables.colors.white}
-                                                    keyboardType="ascii-capable"
-                                                    value={verifyPassword}
-                                                    onChangeText={newText => {
-                                                        setVerifyPassword(newText);
-                                                        registerPassword === newText ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match`)
-                                                    }}
-                                                />
-                                                {passwordMatchError.length ? <Text style={styles.errorMessage}>{passwordMatchError}</Text> : <></>}
-                                            </View>
-                                            <CommonButton
-                                                clicked={register}
-                                                text={'Register'}
-                                                id={'REGISTER'}
-                                                styles={styles.submitButton}
-                                                textStyle={styles.baseText}
-                                                rippleColor={'white'}
-                                                hideRippleEffect={styles.hideRippleEffect}
-                                            ></CommonButton>
-                                        </View> : currentTab == screens.success ?
-                                            <View style={styles.scrollContainer}>
-                                                <SuccessAnimation
-                                                    path={require('../assets/success-green-circle.json')}
-                                                    styles={styles.emailVerified}
-                                                    autoPlay={true}
-                                                    loop={false}
-                                                ></SuccessAnimation>
-                                            </View> : <View></View>
+                                        </View>
                     }
 
                 </View >
@@ -559,15 +423,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center'
     },
-    resetButton: {
-        backgroundColor: Variables.colors.white,
-        color: Variables.colors.blue,
-        alignItems: "center",
-        padding: '4%',
-        borderRadius: 10,
-        flexDirection: 'row',
-        justifyContent: 'center'
-    },
     hideRippleEffect: {
         overflow: 'hidden',
         borderRadius: 30,
@@ -586,4 +441,4 @@ const styles = StyleSheet.create({
         marginLeft: '5%'
     }
 })
-export default LoginComponent
+export default SignInOrSignUpComponent
