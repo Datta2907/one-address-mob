@@ -1,8 +1,7 @@
 import axios from 'axios'
 import environment from "./environment_variables";
-import { jwtDecode } from 'jwt-decode';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import "core-js/stable/atob";
+import { isTokenExpired } from './checkTokenExpiry';
 
 const axiosInstance = axios.create({
     baseURL: environment.api
@@ -10,8 +9,7 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(async (config) => {
     const authToken = await AsyncStorage.getItem('authToken');
-    const decodedToken = authToken ? jwtDecode(authToken) : null;
-    const tokenExpired = decodedToken ? Date.now() >= decodedToken.exp * 1000 ? true : false : true;
+    const tokenExpired = authToken ? isTokenExpired(authToken) : true;
     if (tokenExpired) {
         await AsyncStorage.removeItem('authToken');
         delete axiosInstance.defaults.headers.common.Authorization;

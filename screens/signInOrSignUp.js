@@ -130,7 +130,8 @@ export function SignInOrSignUpComponent({ navigation }) {
                         firstName: userInfo.user.givenName,
                         lastName: userInfo.user.familyName,
                         email: userInfo.user.email,
-                        community: community
+                        community: community,
+                        isNewUser: true,
                     })
                 }
             }
