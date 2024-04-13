@@ -7,30 +7,46 @@ import Variables from "../common/constants";
 import { useRoute } from "@react-navigation/native"
 import CommonButton from "../components/common-button";
 import { getUserRoles } from "../services/user";
-import * as Progress from 'react-native-progress';
+import StepIndicator from "react-native-step-indicator";
 
 const steps = {
-    consent: "consent",
-    register: "register",
-    applied: "applied",
-    inReview: "inReview",
-    welcome: "welcome"
+    consent: 0,
+    register: 1,
+    applied: 2,
+    inReview: 3,
+    welcome: 4
 }
 
-const percentageValues = {
-    consent: 0,
-    register: 25,
-    applied: 50,
-    inReview: 75,
-    welcome: 100
+const labels = ["Consent", "Register", "In-Progress", "Approved", "Welcome"]
+const customStyles = {
+    stepIndicatorSize: 25,
+    currentStepIndicatorSize: 30,
+    separatorStrokeWidth: 2,
+    currentStepStrokeWidth: 3,
+    stepStrokeCurrentColor: '#fe7013',
+    stepStrokeWidth: 3,
+    stepStrokeFinishedColor: '#fe7013',
+    stepStrokeUnFinishedColor: '#aaaaaa',
+    separatorFinishedColor: '#fe7013',
+    separatorUnFinishedColor: '#aaaaaa',
+    stepIndicatorFinishedColor: '#fe7013',
+    stepIndicatorUnFinishedColor: '#ffffff',
+    stepIndicatorCurrentColor: '#ffffff',
+    stepIndicatorLabelFontSize: 13,
+    currentStepIndicatorLabelFontSize: 13,
+    stepIndicatorLabelCurrentColor: '#fe7013',
+    stepIndicatorLabelFinishedColor: '#ffffff',
+    stepIndicatorLabelUnFinishedColor: '#aaaaaa',
+    labelColor: '#999999',
+    labelSize: 13,
+    currentStepLabelColor: '#fe7013'
 }
 
 export function RegisterUser({ navigation }) {
     const route = useRoute();
     // register screen variables
     console.log(route.params)
-    let [step, setStep] = useState('');
-    let [percentageCompleted, setPercentageCompleted] = useState(0);
+    let [step, setStep] = useState(0);
     let [roles, setRoles] = useState([]);
     let [firstName, setFirstName] = useState(route.params.firstName);
     let [firstNameError, setFirstNameError] = useState('');
@@ -49,7 +65,6 @@ export function RegisterUser({ navigation }) {
             setStep(steps.consent);
         } else {
             setStep(route.params.status);
-            setPercentageCompleted(route.params.status);
         }
     }, [])
 
@@ -204,7 +219,11 @@ export function RegisterUser({ navigation }) {
     }
     return (
         <View style={styles.mainContainer}>
-            <Progress.Bar progress={0.3} width={200} />
+            <StepIndicator
+                customStyles={customStyles}
+                currentPosition={step}
+                labels={labels}
+            />
             {setStepScreenView()}
         </View>
     )
@@ -218,10 +237,11 @@ const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
         justifyContent: "space-between",
-        margin: "10%"
+        margin: "5%",
     },
     scrollContainer: {
         flex: 1,
+        padding: "5%"
     },
     credentialInputs: {
         opacity: 0.5,
