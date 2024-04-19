@@ -140,7 +140,7 @@ export function SignInOrSignUpComponent({ navigation }) {
                 // user cancelled the login flow
             } else if (error.code === statusCodes.IN_PROGRESS) {
                 // operation (e.g. sign in) is in progress already
-                Alert.alert('Sign In is already in progress!', [{ text: 'OK' }])
+                Alert.alert('Warning', 'Sign In is already in progress!', [{ text: 'OK' }])
             } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
                 await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
             } else {

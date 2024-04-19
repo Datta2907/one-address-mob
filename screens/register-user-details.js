@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Keyboard, TextInput, View, StyleSheet, Image, Text } from "react-native";
+import { Keyboard, TextInput, View, StyleSheet, Text, ScrollView, Alert } from "react-native";
 import { registerUser } from "../services/auth";
 import SelectDropdown from "react-native-select-dropdown";
 import { MaterialIcons, Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useRoute } from "@react-navigation/native"
 import CommonButton from "../components/common-button";
 import { getUserRoles } from "../services/user";
 import StepIndicator from "react-native-step-indicator";
+import Checkbox from "expo-checkbox";
 
 const steps = {
     consent: 0,
@@ -18,18 +19,25 @@ const steps = {
 }
 
 const labels = ["Consent", "Register", "In-Progress", "Approved", "Welcome"]
+const termsAndConditions = [
+    'The content of the pages of this website is for your general information and use only. It is subject to change without notice.',
+    'This app contains material which is owned by or licensed to us. This material includes, but is not limited to, the design, layout, look, appearance and graphics. Reproduction is prohibited other than in accordance with the copyright notice, which forms part of these terms and conditions.',
+    'Unauthorised use of this website may give rise to a claim for damages and/or be a criminal offence.',
+    'From time to time this website may also include links to other websites. These links are provided for your convenience to provide further information. They do not signify that we endorse the website(s). We have no responsibility for the content of the linked website(s).',
+    'Your use of this website and any dispute arising out of such use of the app is subject to The Law of India.',
+]
 const customStyles = {
     stepIndicatorSize: 25,
-    currentStepIndicatorSize: 30,
+    currentStepIndicatorSize: 40,
     separatorStrokeWidth: 2,
     currentStepStrokeWidth: 3,
     stepStrokeCurrentColor: '#fe7013',
     stepStrokeWidth: 3,
-    stepStrokeFinishedColor: '#fe7013',
+    stepStrokeFinishedColor: Variables.colors.green,
     stepStrokeUnFinishedColor: '#aaaaaa',
-    separatorFinishedColor: '#fe7013',
+    separatorFinishedColor: Variables.colors.green,
     separatorUnFinishedColor: '#aaaaaa',
-    stepIndicatorFinishedColor: '#fe7013',
+    stepIndicatorFinishedColor: Variables.colors.green,
     stepIndicatorUnFinishedColor: '#ffffff',
     stepIndicatorCurrentColor: '#ffffff',
     stepIndicatorLabelFontSize: 13,
@@ -45,9 +53,10 @@ const customStyles = {
 export function RegisterUser({ navigation }) {
     const route = useRoute();
     // register screen variables
-    console.log(route.params)
+    const [isChecked, setChecked] = useState(false);
     let [step, setStep] = useState(0);
     let [roles, setRoles] = useState([]);
+    let [terms, setTerms] = useState([]);
     let [firstName, setFirstName] = useState(route.params.firstName);
     let [firstNameError, setFirstNameError] = useState('');
     let [lastName, setLastName] = useState(route.params.lastName);
@@ -59,8 +68,9 @@ export function RegisterUser({ navigation }) {
     let [registerPasswordError, setRegisterPasswordError] = useState('');
     let [verifyPassword, setVerifyPassword] = useState('');
     let [passwordMatchError, setPasswordMatchError] = useState('');
-
+    console.log(route.params, isChecked);
     useEffect(() => {
+        setTermsAndConditions();
         if (route.params.isNewUser) {
             setStep(steps.consent);
         } else {
@@ -71,6 +81,14 @@ export function RegisterUser({ navigation }) {
     async function getRoles() {
         const roles = await getUserRoles();
         setRoles(roles);
+    }
+
+    function setTermsAndConditions() {
+        let result = [];
+        for (let i = 0; i < termsAndConditions.length; i++) {
+            result.push(<Text style={styles.eachTerm} key={i}>{`\u2023 ${termsAndConditions[i]}`}</Text>)
+        }
+        setTerms(result);
     }
 
     function validateOnlyLetters(newText) {
@@ -96,13 +114,41 @@ export function RegisterUser({ navigation }) {
         }
     }
 
+    function submitConsent() {
+        if (isChecked) {
+            setStep(1);
+        } else {
+            Alert.alert('Warning', 'Please Agree to the Terms And Conditions!', [{ text: 'OK' }]);
+        }
+    }
+
     function setStepScreenView() {
         switch (step) {
             case steps.consent:
                 return (<View style={styles.scrollContainer}>
-                    <Text>Consent</Text>
+                    <Text style={[styles.baseText, styles.heading]}>Welcome</Text>
+                    <View style={styles.conditionsBox}>
+                        <ScrollView persistentScrollbar={true}>
+                            {terms}
+                        </ScrollView>
+                    </View>
+                    <View style={styles.checkBoxDialog}>
+                        <Checkbox
+                            style={styles.checkConsent}
+                            value={isChecked}
+                            onValueChange={setChecked}
+                            color={isChecked ? '#4630EB' : undefined} />
+                        <Text style={styles.baseText}>I Agree to the Terms And Conditions.</Text>
+                    </View>
+                    <CommonButton
+                        clicked={submitConsent}
+                        text={'Submit'}
+                        id={'SUBMIT_CONSENT'}
+                        styles={styles.submitButton}
+                        rippleColor={'white'}
+                        textStyle={styles.baseText}
+                        hideRippleEffect={styles.hideRippleEffect}></CommonButton>
                 </View>)
-                break;
             case steps.register:
                 return (
                     <View style={styles.scrollContainer}>
@@ -202,17 +248,14 @@ export function RegisterUser({ navigation }) {
                             hideRippleEffect={styles.hideRippleEffect}
                         ></CommonButton>
                     </View>)
-                break;
             case steps.applied:
-                <View>
+                return (<View>
                     <Text>Applied</Text>
-                </View>
-                break;
+                </View>)
             case steps.inReview:
-                <View>
+                return (<View>
                     <Text>Inreview</Text>
-                </View>
-                break;
+                </View>)
             default:
                 break;
         }
@@ -233,6 +276,31 @@ const styles = StyleSheet.create({
     baseText: {
         color: Variables.colors.white,
         fontFamily: Variables.fontStyle
+    },
+    heading: {
+        fontSize: 30,
+        textAlign: 'center'
+    },
+    conditionsBox: {
+        height: '70%',
+        marginTop: 20
+    },
+    eachTerm: {
+        fontSize: 15,
+        textAlign: 'left',
+        marginBottom: 20,
+        marginRight: 20,
+        color: Variables.colors.white
+    },
+    checkBoxDialog: {
+        marginBottom: 10,
+        marginHorizontal: 15,
+        marginTop: 20,
+        flexDirection: 'row'
+    },
+    checkConsent: {
+        marginBottom: 10,
+        marginRight: 10
     },
     mainContainer: {
         flex: 1,
@@ -263,15 +331,15 @@ const styles = StyleSheet.create({
         backgroundColor: Variables.colors.green,
         color: Variables.colors.white,
         alignItems: "center",
-        padding: '7%',
-        borderRadius: 10,
-        flexDirection: 'row',
-        justifyContent: 'center'
+        borderRadius: 5,
+        justifyContent: 'center',
+        padding: '5%',
     },
     hideRippleEffect: {
         overflow: 'hidden',
-        borderRadius: 30,
-        marginTop: '15%'
+        borderRadius: 5,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     dropDown: {
         width: "100%",
