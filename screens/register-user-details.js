@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import { Keyboard, TextInput, View, StyleSheet, Text, ScrollView, Alert, KeyboardAvoidingView } from "react-native";
 import { registerUser } from "../services/auth";
 import SelectDropdown from "react-native-select-dropdown";
-import { MaterialIcons, Ionicons, FontAwesome5, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5, MaterialCommunityIcons, Entypo, FontAwesome } from '@expo/vector-icons';
 import Variables from "../common/constants";
 import { useRoute } from "@react-navigation/native"
 import CommonButton from "../components/common-button";
-import { getUserRoles } from "../services/user";
+import { getRepresentatives } from "../services/user";
 import StepIndicator from "react-native-step-indicator";
 import Checkbox from "expo-checkbox";
 import { PhoneInput } from "../components/phone-input";
+import SuccessAnimation from "../components/success-animation";
 
 const steps = {
     consent: 0,
@@ -27,6 +28,8 @@ const termsAndConditions = [
     'From time to time this website may also include links to other websites. These links are provided for your convenience to provide further information. They do not signify that we endorse the website(s). We have no responsibility for the content of the linked website(s).',
     'Your use of this website and any dispute arising out of such use of the app is subject to The Law of India.',
 ]
+const passwordErrorMessage = 'Password Must Contain \n 1.Atleast one capital alphabet.\n 2.Atleast one lower alphabet.\n 3.Atleast one number.\n 4.Atleast one special character.\n 5.A length of range [8-15]';
+
 const customStyles = {
     stepIndicatorSize: 25,
     currentStepIndicatorSize: 40,
@@ -55,8 +58,8 @@ export function RegisterUser({ navigation }) {
     const route = useRoute();
     // register screen variables
     const [isChecked, setChecked] = useState(false);
-    const [step, setStep] = useState(0);
-    const [roles, setRoles] = useState([]);
+    const [step, setStep] = useState(1);
+    const [representatives, setRepresentatives] = useState([]);
     const [terms, setTerms] = useState([]);
     const [firstName, setFirstName] = useState(route.params.firstName);
     const [firstNameError, setFirstNameError] = useState('');
@@ -64,48 +67,43 @@ export function RegisterUser({ navigation }) {
     const [lastNameError, setLastNameError] = useState('');
     const [email, setEmail] = useState(route.params.email);
     const [address, setAddress] = useState('');
-    const [mobile, setMobile] = useState();
+    const [addressError, setAddressError] = useState('');
+    const [mobile, setMobile] = useState(undefined);
     const [mobileError, setMobileError] = useState('');
     const [gender, setGender] = useState('');
     const [genderError, setGenderError] = useState('');
-    const [owner, setOwner] = useState('');
-    const [ownerError, setOwnerError] = useState('');
-    const [displaySensitiveDetailsConsent, setDisplaySensitiveDetailsConsent] = useState(true);
+    const [community, setCommunity] = useState('');
+    const [isRepresentative, setIsRepresentative] = useState(undefined);
+    const [representativeError, setRepresentativeError] = useState('');
+    const [displaySensitiveDetailsConsent, setDisplaySensitiveDetailsConsent] = useState(undefined);
     const [role, setRole] = useState('');
     const [roleError, setRoleError] = useState('');
     const [registerPassword, setRegisterPassword] = useState('');
     const [registerPasswordError, setRegisterPasswordError] = useState('');
     const [verifyPassword, setVerifyPassword] = useState('');
     const [passwordMatchError, setPasswordMatchError] = useState('');
-    console.log(route.params, isChecked);
-    const [countryCode, setCountryCode] = useState("IN");
 
     useEffect(() => {
         setTermsAndConditions();
-        if (route.params.isNewUser) {
-            setStep(steps.consent);
-        } else {
-            setStep(route.params.status);
-        }
+        //getAllRepresentatives();
+        setCommunity(route.params.community);
+        validateOnlyLetters(route.params.firstName) ? setFirstNameError('Invalid First Name') : setFirstNameError('');
+        validateOnlyLetters(route.params.lastName) ? setLastNameError('Invalid Last Name') : setLastNameError('');
+        // if (route.params.isNewUser) {
+        //     setStep(steps.consent);
+        // } else {
+        //setStep(route.params.status);
+        //}
     }, [])
 
-    const handleAccountUpdate = async () => {
-        // To be implemented
-    };
-
-    const handleChangeCountry = (country) => {
-        setCountryCode(country.cca2);
-    };
-
-    const handleChangePhone = (number) => {
-        setMobile(number)
-    };
-
-    async function getRoles() {
-        const roles = await getUserRoles();
-        setRoles(roles);
+    async function getAllRepresentatives() {
+        let result = await getRepresentatives();
+        if (result.success) {
+            setRepresentatives(result.data);
+        } else {
+            Alert.alert('Error', result.message, [{ text: 'Ok' }]);
+        }
     }
-
     function setTermsAndConditions() {
         let result = [];
         for (let i = 0; i < termsAndConditions.length; i++) {
@@ -128,20 +126,25 @@ export function RegisterUser({ navigation }) {
 
     async function register() {
         Keyboard.dismiss();
+        genderError == '' && gender ? setGenderError('') : setGenderError('Select a gender');
         roleError == '' && role ? setRoleError('') : setRoleError('Select a role');
-        passwordMatchError == '' && verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
+        role != 'RESIDENT' && isRepresentative ? setRepresentativeError('') : setRepresentativeError('Select your flat owner or representative');
         firstNameError == '' && firstName ? setFirstNameError('') : setFirstNameError('Invalid First Name');
         lastNameError == '' && lastName ? setLastNameError('') : setLastNameError('Invalid Last Name');
+        addressError == '' && address ? setAddressError('') : setAddressError('Address is required');
         registerPasswordError == '' && registerPassword ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage);
-        const allVariablesExists = role && verifyPassword && firstName && lastName && registerPassword;
-        const allVariablesValid = !roleError && !passwordMatchError && !firstNameError && !lastNameError && !registerPasswordError;
+        passwordMatchError == '' && verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
+        mobile == undefined ? setMobileError('Invalid Phone Number') : setMobileError('');
+        const allVariablesExists = gender && role && community && firstName && lastName && address && mobile && registerPassword && verifyPassword;
+        const allVariablesValid = !genderError && !roleError && !representativeError && !firstNameError && !lastNameError && !addressError && !mobileError && !registerPasswordError && !passwordMatchError;
         if (allVariablesExists && allVariablesValid) {
-            const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
-            if (res.success) {
-                //next step
-            } else {
-                Alert.alert(res.message, [{ text: 'OK' }])
-            }
+            console.log(gender, role, community, firstName, lastName, address, registerPassword, verifyPassword);
+            // const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
+            // if (res.success) {
+            //     navigation.navigate('Home');
+            // } else {
+            //     Alert.alert('Warning', res.message, [{ text: 'OK' }])
+            // }
         }
     }
 
@@ -156,47 +159,60 @@ export function RegisterUser({ navigation }) {
     function setStepScreenView() {
         switch (step) {
             case steps.consent:
-                return (<View style={styles.scrollContainer}>
-                    <Text style={[styles.baseText, styles.heading]}>Welcome</Text>
-                    <View style={styles.conditionsBox}>
-                        <ScrollView persistentScrollbar={true}>
-                            {terms}
-                        </ScrollView>
+                return (
+                    <View style={styles.scrollContainer}>
+                        <Text style={[styles.baseText, styles.heading]}>Welcome</Text>
+                        <View style={styles.conditionsBox}>
+                            <ScrollView persistentScrollbar={true}>
+                                {terms}
+                            </ScrollView>
+                        </View>
+                        <View style={styles.checkBoxDialog}>
+                            <Checkbox
+                                style={styles.checkConsent}
+                                value={isChecked}
+                                onValueChange={setChecked}
+                                color={isChecked ? '#4630EB' : undefined} />
+                            <Text style={styles.baseText}>I Agree to the Terms And Conditions.</Text>
+                        </View>
+                        <CommonButton
+                            clicked={submitConsent}
+                            text={'Submit'}
+                            id={'SUBMIT_CONSENT'}
+                            styles={styles.submitButton}
+                            rippleColor={'white'}
+                            textStyle={styles.baseText}
+                            hideRippleEffect={styles.hideRippleEffect}></CommonButton>
                     </View>
-                    <View style={styles.checkBoxDialog}>
-                        <Checkbox
-                            style={styles.checkConsent}
-                            value={isChecked}
-                            onValueChange={setChecked}
-                            color={isChecked ? '#4630EB' : undefined} />
-                        <Text style={styles.baseText}>I Agree to the Terms And Conditions.</Text>
-                    </View>
-                    <CommonButton
-                        clicked={submitConsent}
-                        text={'Submit'}
-                        id={'SUBMIT_CONSENT'}
-                        styles={styles.submitButton}
-                        rippleColor={'white'}
-                        textStyle={styles.baseText}
-                        hideRippleEffect={styles.hideRippleEffect}></CommonButton>
-                </View>)
+                )
             case steps.register:
                 return (
                     <View style={styles.basicVerticalScrollContainer}>
                         <KeyboardAvoidingView behavior="padding" style={styles.basicContainer} enabled>
-                            <ScrollView style={styles.basicHorizontalScrollContainer} keyboardShouldPersistTaps={'handled'} persistentScrollbar={true}>
-                                <SelectDropdown buttonStyle={styles.dropDown} data={['Developer', 'President', 'Resident', 'Non-Resident', 'NA']}
+                            <ScrollView style={styles.basicHorizontalScrollContainer} keyboardShouldPersistTaps={'always'} persistentScrollbar={true}>
+                                <SelectDropdown buttonStyle={styles.dropDown} data={['FEMALE', 'MALE', 'OTHERS', 'PREFER_NOT_TO_SAY']}
+                                    onSelect={(selectedItem, index) => { setGender(selectedItem); setGenderError(''); }}
+                                    defaultButtonText="Select Gender"
+                                    buttonTextAfterSelection={(selectedItem) => { return selectedItem }}
+                                    rowTextForSelection={(selectedItem) => { return selectedItem }}
+                                ></SelectDropdown>
+                                {genderError.length ? <Text style={styles.errorMessage}>{genderError}</Text> : <></>}
+                                <SelectDropdown buttonStyle={styles.dropDown} data={['RESIDENT', 'TENANTS', 'OTHERS']}
                                     onSelect={(selectedItem, index) => { setRole(selectedItem); setRoleError(''); }}
                                     defaultButtonText="Select Role"
                                     buttonTextAfterSelection={(selectedItem) => { return selectedItem }}
                                     rowTextForSelection={(selectedItem) => { return selectedItem }}
-                                    search={true}
-                                    searchPlaceHolder="Search Here..."
-                                    dropdownIconPosition="left"
-                                    renderDropdownIcon={() => { return <MaterialIcons name="work" size={18} color="black" /> }}
-                                    renderSearchInputLeftIcon={() => { return <Ionicons name="search" size={18} color="black" /> }}
                                 ></SelectDropdown>
                                 {roleError.length ? <Text style={styles.errorMessage}>{roleError}</Text> : <></>}
+                                {role != 'RESIDENT' && <SelectDropdown buttonStyle={styles.dropDown} data={representatives}
+                                    onSelect={(selectedItem, index) => { setAddress(selectedItem.address); setIsRepresentative(true) }}
+                                    defaultButtonText="Select Your Representative"
+                                    buttonTextAfterSelection={(selectedItem) => { return selectedItem.name }}
+                                    rowTextForSelection={(selectedItem) => { return selectedItem.name }}
+                                    dropdownIconPosition="left"
+                                    renderDropdownIcon={() => { return <FontAwesome name="user" size={18} color="black" /> }}
+                                ></SelectDropdown>}
+                                {representativeError.length ? <Text style={styles.errorMessage}>{representativeError}</Text> : <></>}
                                 <View style={styles.inputBox}>
                                     <MaterialCommunityIcons name="account-arrow-left" size={24} color="white" style={styles.icons} />
                                     <TextInput
@@ -206,10 +222,12 @@ export function RegisterUser({ navigation }) {
                                         autoCapitalize="none"
                                         autoComplete="off"
                                         autoCorrect={false}
-                                        multiline={false}
+                                        multiline={true}
+                                        blurOnSubmit={true}
                                         selectionColor={Variables.colors.white}
                                         keyboardType="ascii-capable"
                                         value={firstName}
+                                        maxLength={20}
                                         onChangeText={newText => {
                                             setFirstName(newText);
                                             validateOnlyLetters(newText) ? setFirstNameError('Invalid First Name') : setFirstNameError('')
@@ -224,10 +242,12 @@ export function RegisterUser({ navigation }) {
                                         autoCapitalize="none"
                                         autoComplete="off"
                                         autoCorrect={false}
-                                        multiline={false}
+                                        multiline={true}
+                                        blurOnSubmit={true}
                                         selectionColor={Variables.colors.white}
                                         keyboardType="ascii-capable"
                                         value={lastName}
+                                        maxLength={10}
                                         onChangeText={newText => {
                                             setLastName(newText);
                                             validateOnlyLetters(newText) ? setLastNameError('Invalid Last Name') : setLastNameError('')
@@ -242,7 +262,8 @@ export function RegisterUser({ navigation }) {
                                         autoCapitalize="none"
                                         autoComplete="off"
                                         autoCorrect={false}
-                                        multiline={false}
+                                        multiline={true}
+                                        blurOnSubmit={true}
                                         selectionColor={Variables.colors.white}
                                         keyboardType="ascii-capable"
                                         value={email}
@@ -257,23 +278,25 @@ export function RegisterUser({ navigation }) {
                                         autoCapitalize="none"
                                         autoComplete="off"
                                         autoCorrect={false}
-                                        multiline={false}
+                                        multiline={true}
+                                        blurOnSubmit={true}
                                         selectionColor={Variables.colors.white}
                                         keyboardType="ascii-capable"
                                         value={address}
                                         maxLength={30}
+                                        editable={isRepresentative}
                                         onChangeText={newText => {
                                             setAddress(newText);
+                                            newText == '' ? setAddressError('Address is required') : setAddressError('');
                                         }}
                                     />
+                                    {addressError.length ? <Text style={styles.errorMessage}>{addressError}</Text> : <></>}
                                     <PhoneInput
-                                        placeholder="Enter Phone"
-                                        phone={mobile}
-                                        onChangePhone={handleChangePhone}
-                                        countryCode={countryCode}
-                                        onChangeCountry={handleChangeCountry}
+                                        parsedDetails={setMobile}
+                                        errorMessage={setMobileError}
                                         preferredCountries={["IN"]}
                                     />
+                                    {mobileError.length ? <Text style={styles.errorMessage}>{mobileError}</Text> : <></>}
                                     <FontAwesome5 name="unlock" size={20} color="white" style={styles.icons} />
                                     <TextInput
                                         style={styles.credentialInputs}
@@ -282,10 +305,12 @@ export function RegisterUser({ navigation }) {
                                         autoCapitalize="none"
                                         autoComplete="off"
                                         autoCorrect={false}
-                                        multiline={false}
+                                        multiline={true}
+                                        blurOnSubmit={true}
                                         selectionColor={Variables.colors.white}
                                         keyboardType="ascii-capable"
                                         value={registerPassword}
+                                        maxLength={15}
                                         onChangeText={newText => {
                                             setRegisterPassword(newText);
                                             isPasswordValid(newText) ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage)
@@ -300,10 +325,12 @@ export function RegisterUser({ navigation }) {
                                         autoCapitalize="none"
                                         autoComplete="off"
                                         autoCorrect={false}
-                                        multiline={false}
+                                        multiline={true}
+                                        blurOnSubmit={true}
                                         selectionColor={Variables.colors.white}
                                         keyboardType="ascii-capable"
                                         value={verifyPassword}
+                                        maxLength={15}
                                         onChangeText={newText => {
                                             setVerifyPassword(newText);
                                             registerPassword === newText ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match`)
@@ -322,15 +349,25 @@ export function RegisterUser({ navigation }) {
                             rippleColor={'white'}
                             hideRippleEffect={styles.hideRippleEffect}
                         ></CommonButton>
-                    </View>)
+                    </View>
+                )
             case steps.applied:
-                return (<View>
-                    <Text>Applied</Text>
-                </View>)
+                return (
+                    <View style={styles.basicContainer}>
+                        <SuccessAnimation
+                            path={require('../assets/success-green-circle.json')}
+                            styles={styles.emailVerified}
+                            autoPlay={true}
+                            loop={true}
+                        ></SuccessAnimation>
+                    </View>
+                )
             case steps.inReview:
-                return (<View>
-                    <Text>Inreview</Text>
-                </View>)
+                return (
+                    <View>
+                        <Text>Inreview</Text>
+                    </View>
+                )
             default:
                 break;
         }
@@ -405,13 +442,13 @@ const styles = StyleSheet.create({
         color: Variables.colors.white,
         textAlignVertical: 'center',
         textAlign: 'center',
-        paddingLeft: '10%',
+        paddingLeft: '10%'
     },
     icons: {
         color: Variables.colors.white,
         position: 'relative',
         top: 40,
-        left: 20
+        left: 10
     },
     submitButton: {
         backgroundColor: Variables.colors.green,
@@ -439,7 +476,11 @@ const styles = StyleSheet.create({
     },
     dropDown: {
         width: "100%",
-        borderRadius: 5
+        borderRadius: 5,
+        marginTop: '5%'
+    },
+    emailVerified: {
+        height: 300
     },
     errorMessage: {
         color: Variables.colors.red,

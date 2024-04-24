@@ -1,20 +1,33 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import CountryPicker from "react-native-country-picker-modal";
 import Variables from "../common/constants";
+import { useState } from "react";
+import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 
 export function PhoneInput({
-    countryCode,
-    phone,
-    onChangeCountry,
-    onChangePhone,
+    parsedDetails,
+    errorMessage,
     preferredCountries
 }) {
-    const handleChangeCountry = (country) => {
-        onChangeCountry(country);
-    };
+    const [mobile, setMobile] = useState('');
+    const [countryCode, setCountryCode] = useState('IN');
 
     const handleChangeText = (value) => {
-        onChangePhone(value);
+        setMobile(value);
+        const isValid = isValidPhoneNumber(value, countryCode);
+        if (isValid) {
+            const phone = parsePhoneNumber(value, countryCode);
+            if (phone && phone.isValid()) {
+                parsedDetails(phone);
+                errorMessage('')
+            } else {
+                parsedDetails(undefined);
+                errorMessage('Invalid Phone Number')
+            }
+        } else {
+            parsedDetails(undefined);
+            errorMessage('Invalid Phone Number');
+        }
     };
 
     return (
@@ -30,7 +43,7 @@ export function PhoneInput({
                     withFilter
                     withFlag
                     preferredCountries={preferredCountries}
-                    onSelect={handleChangeCountry}
+                    onSelect={setCountryCode}
                 />
                 <TextInput
                     style={styles.textInput}
@@ -39,8 +52,8 @@ export function PhoneInput({
                     autoComplete="tel"
                     textContentType="telephoneNumber"
                     onChangeText={handleChangeText}
-                    value={phone}
-                    placeholder="Mobile"
+                    value={mobile}
+                    placeholder="Phone Number"
                     placeholderTextColor={Variables.colors.white}
                 />
             </View>
@@ -70,9 +83,7 @@ const styles = StyleSheet.create({
     textInput: {
         opacity: 0.5,
         borderColor: Variables.colors.white,
-        fontSize: 20,
         borderBottomWidth: 1,
-        padding: '2%',
         color: Variables.colors.white,
         flex: 1,
         textAlign: 'center',

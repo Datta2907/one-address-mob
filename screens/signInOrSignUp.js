@@ -16,7 +16,6 @@ const screens = {
     enterEmail: "enterEmail",
     verifyCode: "verifyCode",
     loading: "loading",
-    success: "success"
 }
 
 const passwordErrorMessage = 'Password Must Contain \n 1.Atleast one capital alphabet.\n 2.Atleast one lower alphabet.\n 3.Atleast one number.\n 4.Atleast one special character.\n 5.A length of range [8-15]';
@@ -46,7 +45,7 @@ export function SignInOrSignUpComponent({ navigation }) {
     }, [])
 
     function signIn() {
-        if (currentTab != screens.loading && currentTab != screens.success) {
+        if (currentTab != screens.loading) {
             setCurrentTab(screens.login);
             setParentTab(screens.signIn);
             setCommunity('');
@@ -59,7 +58,7 @@ export function SignInOrSignUpComponent({ navigation }) {
     }
 
     function signUp() {
-        if (currentTab != screens.loading && currentTab != screens.success) {
+        if (currentTab != screens.loading) {
             setCurrentTab(screens.enterEmail);
             setParentTab(screens.signUp);
             setLoginEmail('');
@@ -131,6 +130,7 @@ export function SignInOrSignUpComponent({ navigation }) {
                         lastName: userInfo.user.familyName,
                         email: userInfo.user.email,
                         community: community,
+                        photo: userInfo.user.photo,
                         isNewUser: true,
                     })
                 }
@@ -144,7 +144,6 @@ export function SignInOrSignUpComponent({ navigation }) {
             } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
                 await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
             } else {
-                signUp();
                 ToastAndroid.showWithGravityAndOffset(
                     'Something went wrong, please sign up again!',
                     ToastAndroid.LONG,
@@ -152,6 +151,8 @@ export function SignInOrSignUpComponent({ navigation }) {
                     25,
                     50,
                 );
+                setCurrentTab(screens.enterEmail);
+                signUp();
             }
         }
     }
@@ -327,24 +328,14 @@ export function SignInOrSignUpComponent({ navigation }) {
                                     <View style={styles.scrollContainer}>
                                         <SuccessAnimation
                                             path={require('../assets/loading.json')}
-                                            styles={styles.emailVerified}
+                                            styles={styles.loading}
                                             autoPlay={true}
                                             loop={true}
                                         ></SuccessAnimation>
                                     </View>
                                     :
-                                    currentTab == screens.success ?
-                                        <View style={styles.scrollContainer}>
-                                            <SuccessAnimation
-                                                path={require('../assets/success-green-circle.json')}
-                                                styles={styles.emailVerified}
-                                                autoPlay={true}
-                                                loop={false}
-                                            ></SuccessAnimation>
-                                        </View>
-                                        :
-                                        <View>
-                                        </View>
+                                    <View>
+                                    </View>
                     }
 
                 </View >
@@ -365,7 +356,7 @@ const styles = StyleSheet.create({
     scrollContainer: {
         flex: 1
     },
-    emailVerified: {
+    loading: {
         height: 300
     },
     container: {
