@@ -57,27 +57,27 @@ const customStyles = {
 export function RegisterUser({ navigation }) {
     const route = useRoute();
     // register screen variables
+    const email = route.params.email;
+    const community = route.params.community;
+    const role = route.params.role;
+    const showResidents = (role != 'PRESIDENT' && role != "RESIDENT");
     const [isChecked, setChecked] = useState(false);
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(route.params.isNewUser ? steps.consent : route.params.status);
     const [representatives, setRepresentatives] = useState([]);
     const [terms, setTerms] = useState([]);
     const [firstName, setFirstName] = useState(route.params.firstName);
     const [firstNameError, setFirstNameError] = useState('');
     const [lastName, setLastName] = useState(route.params.lastName);
     const [lastNameError, setLastNameError] = useState('');
-    const [email, setEmail] = useState(route.params.email);
     const [address, setAddress] = useState('');
     const [addressError, setAddressError] = useState('');
     const [mobile, setMobile] = useState(undefined);
     const [mobileError, setMobileError] = useState('');
     const [gender, setGender] = useState('');
     const [genderError, setGenderError] = useState('');
-    const [community, setCommunity] = useState('');
     const [isRepresentative, setIsRepresentative] = useState(undefined);
     const [representativeError, setRepresentativeError] = useState('');
     const [displaySensitiveDetailsConsent, setDisplaySensitiveDetailsConsent] = useState(undefined);
-    const [role, setRole] = useState('');
-    const [roleError, setRoleError] = useState('');
     const [registerPassword, setRegisterPassword] = useState('');
     const [registerPasswordError, setRegisterPasswordError] = useState('');
     const [verifyPassword, setVerifyPassword] = useState('');
@@ -85,15 +85,11 @@ export function RegisterUser({ navigation }) {
 
     useEffect(() => {
         setTermsAndConditions();
-        //getAllRepresentatives();
-        setCommunity(route.params.community);
+        if (showResidents) {
+            getAllRepresentatives();
+        }
         validateOnlyLetters(route.params.firstName) ? setFirstNameError('Invalid First Name') : setFirstNameError('');
         validateOnlyLetters(route.params.lastName) ? setLastNameError('Invalid Last Name') : setLastNameError('');
-        // if (route.params.isNewUser) {
-        //     setStep(steps.consent);
-        // } else {
-        //setStep(route.params.status);
-        //}
     }, [])
 
     async function getAllRepresentatives() {
@@ -126,18 +122,16 @@ export function RegisterUser({ navigation }) {
 
     async function register() {
         Keyboard.dismiss();
-        genderError == '' && gender ? setGenderError('') : setGenderError('Select a gender');
-        roleError == '' && role ? setRoleError('') : setRoleError('Select a role');
+        gender != '' ? setGenderError('') : setGenderError('Select a gender');
         role != 'RESIDENT' && isRepresentative ? setRepresentativeError('') : setRepresentativeError('Select your flat owner or representative');
         firstNameError == '' && firstName ? setFirstNameError('') : setFirstNameError('Invalid First Name');
         lastNameError == '' && lastName ? setLastNameError('') : setLastNameError('Invalid Last Name');
-        addressError == '' && address ? setAddressError('') : setAddressError('Address is required');
+        address != '' ? setAddressError('') : setAddressError('Address is required');
         registerPasswordError == '' && registerPassword ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage);
-        passwordMatchError == '' && verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
+        registerPassword == verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
         mobile == undefined ? setMobileError('Invalid Phone Number') : setMobileError('');
-        const allVariablesExists = gender && role && community && firstName && lastName && address && mobile && registerPassword && verifyPassword;
-        const allVariablesValid = !genderError && !roleError && !representativeError && !firstNameError && !lastNameError && !addressError && !mobileError && !registerPasswordError && !passwordMatchError;
-        if (allVariablesExists && allVariablesValid) {
+        const allVariablesValid = !genderError && !representativeError && !firstNameError && !lastNameError && !addressError && !mobileError && !registerPasswordError && !passwordMatchError;
+        if (allVariablesValid) {
             console.log(gender, role, community, firstName, lastName, address, registerPassword, verifyPassword);
             // const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
             // if (res.success) {
@@ -197,13 +191,6 @@ export function RegisterUser({ navigation }) {
                                     rowTextForSelection={(selectedItem) => { return selectedItem }}
                                 ></SelectDropdown>
                                 {genderError.length ? <Text style={styles.errorMessage}>{genderError}</Text> : <></>}
-                                <SelectDropdown buttonStyle={styles.dropDown} data={['RESIDENT', 'TENANTS', 'OTHERS']}
-                                    onSelect={(selectedItem, index) => { setRole(selectedItem); setRoleError(''); }}
-                                    defaultButtonText="Select Role"
-                                    buttonTextAfterSelection={(selectedItem) => { return selectedItem }}
-                                    rowTextForSelection={(selectedItem) => { return selectedItem }}
-                                ></SelectDropdown>
-                                {roleError.length ? <Text style={styles.errorMessage}>{roleError}</Text> : <></>}
                                 {role != 'RESIDENT' && <SelectDropdown buttonStyle={styles.dropDown} data={representatives}
                                     onSelect={(selectedItem, index) => { setAddress(selectedItem.address); setIsRepresentative(true) }}
                                     defaultButtonText="Select Your Representative"

@@ -8,6 +8,7 @@ import SuccessAnimation from "../components/success-animation";
 import { loginWithPassword, sendVerificationCode, verifyCode, verifyGoogleIdToken } from "../services/auth";
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCommunitiesInCity } from "../services/community";
 
 const screens = {
     signUp: "signUp",
@@ -21,33 +22,38 @@ const screens = {
 const passwordErrorMessage = 'Password Must Contain \n 1.Atleast one capital alphabet.\n 2.Atleast one lower alphabet.\n 3.Atleast one number.\n 4.Atleast one special character.\n 5.A length of range [8-15]';
 
 export function SignInOrSignUpComponent({ navigation }) {
-    let [userInfo, setUserInfo] = useState(null);
-    let [currentTab, setCurrentTab] = useState(screens.login);
-    let [parentTab, setParentTab] = useState(screens.signIn);
+    const [currentTab, setCurrentTab] = useState(screens.login);
+    const [parentTab, setParentTab] = useState(screens.signIn);
     // login screen variables
-    let [loginEmail, setLoginEmail] = useState('');
-    let [loginEmailError, setLoginEmailError] = useState('');
-    let [loginPassword, setLoginPassword] = useState('');
-    let [loginPasswordError, setLoginPasswordError] = useState('');
+    const [loginEmail, setLoginEmail] = useState('');
+    const [loginEmailError, setLoginEmailError] = useState('');
+    const [loginPassword, setLoginPassword] = useState('');
+    const [loginPasswordError, setLoginPasswordError] = useState('');
     //send email-otp variables
-    let [community, setCommunity] = useState('');
-    let [communityError, setCommunityError] = useState('');
-    let [oauthEmail, setOauthEmail] = useState('');
-    let [oauthEmailError, setOauthEmailError] = useState('');
-    let [otp, setOtp] = useState('');
-    let [otpError, setOtpError] = useState('');
+    const [role, setRole] = useState('');
+    const [roleError, setRoleError] = useState('');
+    const [communities, setCommunities] = useState();
+    const [community, setCommunity] = useState('');
+    const [communityError, setCommunityError] = useState('');
+    const [oauthEmail, setOauthEmail] = useState('');
+    const [oauthEmailError, setOauthEmailError] = useState('');
+    const [otp, setOtp] = useState('');
+    const [otpError, setOtpError] = useState('');
 
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
             offlineAccess: true,
         })
+        getCommunities();
     }, [])
 
     function signIn() {
         if (currentTab != screens.loading) {
             setCurrentTab(screens.login);
             setParentTab(screens.signIn);
+            setRole('');
+            setRoleError('');
             setCommunity('');
             setCommunityError('');
             setOauthEmail('');
@@ -84,6 +90,15 @@ export function SignInOrSignUpComponent({ navigation }) {
         }
     }
 
+    async function getCommunities() {
+        const result = await getCommunitiesInCity();
+        if (result.success) {
+            setCommunities(result.data)
+        } else {
+            Alert.alert(res.message, [{ text: 'OK' }])
+        }
+    }
+
     async function login() {
         Keyboard.dismiss();
         loginEmailError == '' && loginEmail ? setLoginEmailError('') : setLoginEmailError('Invalid Email');
@@ -99,11 +114,16 @@ export function SignInOrSignUpComponent({ navigation }) {
         }
     }
 
-    async function sendCode() {
-        Keyboard.dismiss();
+    function validateDetails() {
         oauthEmailError == '' && oauthEmail ? setOauthEmailError('') : setOauthEmailError('Invalid Email');
         community == '' ? setCommunityError('Select a community') : setCommunityError('');
-        if (community != '' && !oauthEmailError && oauthEmail) {
+        return !communityError && !oauthEmailError;
+    }
+
+    async function sendCode() {
+        Keyboard.dismiss();
+        const isDataValid = validateDetails();
+        if (isDataValid) {
             setCurrentTab(screens.loading);
             const res = await sendVerificationCode(oauthEmail);
             if (res.success) {
@@ -116,23 +136,26 @@ export function SignInOrSignUpComponent({ navigation }) {
 
     async function signUpWithGoogle() {
         try {
-            setCurrentTab(screens.loading);
-            await GoogleSignin.hasPlayServices();
-            const userInfo = await GoogleSignin.signIn();
-            setUserInfo(userInfo); //need to store in redux
-            console.log(userInfo);
-            if (userInfo) {
-                let verifyWithGoogleServer = await verifyGoogleIdToken(userInfo.idToken, userInfo.user.email)
-                if (verifyWithGoogleServer.success) {
-                    //navigate with these details
-                    navigation.navigate('registerUser', {
-                        firstName: userInfo.user.givenName,
-                        lastName: userInfo.user.familyName,
-                        email: userInfo.user.email,
-                        community: community,
-                        photo: userInfo.user.photo,
-                        isNewUser: true,
-                    })
+            const isDataValid = validateDetails();
+            if (isDataValid) {
+                setCurrentTab(screens.loading);
+                await GoogleSignin.hasPlayServices();
+                const userInfo = await GoogleSignin.signIn();
+                //need to store token details in redux
+                if (userInfo) {
+                    let verifyWithGoogleServer = await verifyGoogleIdToken(userInfo.idToken, userInfo.user.email)
+                    if (verifyWithGoogleServer.success) {
+                        //navigate with these details
+                        navigation.navigate('registerUser', {
+                            firstName: userInfo.user.givenName,
+                            lastName: userInfo.user.familyName,
+                            email: userInfo.user.email,
+                            role,
+                            community,
+                            photo: userInfo.user.photo,
+                            isNewUser: true,
+                        })
+                    }
                 }
             }
         } catch (error) {
@@ -163,7 +186,15 @@ export function SignInOrSignUpComponent({ navigation }) {
             setCurrentTab(screens.loading);
             if (res.success) {
                 //navigate with current details
-                setCurrentTab(screens.register);
+                navigation.navigate('registerUser', {
+                    firstName: '',
+                    lastName: '',
+                    email: oauthEmail,
+                    role,
+                    community,
+                    photo: '',
+                    isNewUser: true,
+                })
                 setOtp('');
             } else {
                 Alert.alert(res.message, [{ text: 'OK' }])
@@ -244,8 +275,15 @@ export function SignInOrSignUpComponent({ navigation }) {
                         :
                         currentTab == screens.enterEmail ?
                             <View style={styles.inputBox}>
-                                <SelectDropdown buttonStyle={styles.dropDown} data={[{ name: "Velama Community", address: "pragathi nagar", state: "telangana" }, { name: "X community", address: "koti", state: "telanagana" }]}
-                                    onSelect={(selectedItem, index) => { setCommunity(selectedItem.name); setCommunityError(''); }}
+                                <SelectDropdown buttonStyle={styles.dropDown} data={['PRESIDENT', 'RESIDENT', 'TENANTS', 'OTHERS']}
+                                    onSelect={(selectedItem, index) => { setRole(selectedItem); setRoleError(''); }}
+                                    defaultButtonText="Select Role"
+                                    buttonTextAfterSelection={(selectedItem) => { return selectedItem }}
+                                    rowTextForSelection={(selectedItem) => { return selectedItem }}
+                                ></SelectDropdown>
+                                {roleError.length ? <Text style={styles.errorMessage}>{roleError}</Text> : <></>}
+                                {role != 'PRESIDENT' && <SelectDropdown buttonStyle={styles.dropDown} data={communities}
+                                    onSelect={(selectedItem, index) => { setCommunity(selectedItem._id); setCommunityError(''); }}
                                     defaultButtonText="Select Community"
                                     buttonTextAfterSelection={(selectedItem) => { return selectedItem.name }}
                                     rowTextForSelection={(selectedItem) => { return selectedItem.name }}
@@ -254,7 +292,7 @@ export function SignInOrSignUpComponent({ navigation }) {
                                     dropdownIconPosition="left"
                                     renderDropdownIcon={() => { return <Entypo name="location-pin" size={18} color="black" /> }}
                                     renderSearchInputLeftIcon={() => { return <FontAwesome5 name="search-location" size={18} color="black" /> }}
-                                ></SelectDropdown>
+                                ></SelectDropdown>}
                                 {communityError.length ? <Text style={styles.errorMessage}>{communityError}</Text> : <></>}
                                 <MaterialIcons name="email" size={20} color="white" style={styles.icons} />
                                 <TextInput
