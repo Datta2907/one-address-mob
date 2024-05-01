@@ -1,16 +1,16 @@
-import { StyleSheet, Text, TextInput, View } from "react-native";
-import CountryPicker from "react-native-country-picker-modal";
+import { Button, FlatList, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
 import Variables from "../common/constants";
 import { useState } from "react";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 
 export function PhoneInput({
     parsedDetails,
-    errorMessage,
-    preferredCountries
+    errorMessage
 }) {
+    const codesWithNames = [{ countryCode: "+91", country: "India" }, { countryCode: "+1", country: "Usa" }]
     const [mobile, setMobile] = useState('');
-    const [countryCode, setCountryCode] = useState('IN');
+    const [modalVisible, setModalVisible] = useState(false);
+    const [countryCode, setCountryCode] = useState('+91');
 
     const handleChangeText = (value) => {
         setMobile(value);
@@ -30,20 +30,32 @@ export function PhoneInput({
         }
     };
 
+    function displayModal() {
+        setModalVisible(true)
+    }
+
     return (
         <View style={styles.container}>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    setModalVisible(!modalVisible);
+                }}>
+                <FlatList
+                    data={codesWithNames}
+                    renderItem={({ item }) => <TouchableWithoutFeedback onPress={() => { setModalVisible(false); setCountryCode(item.countryCode) }}><Text>{item.countryCode} - {item.country}</Text></TouchableWithoutFeedback>}
+                    keyExtractor={item => item.countryCode}
+                />
+            </Modal>
             <View style={styles.row}>
-                <CountryPicker
-                    containerButtonStyle={
+                <Button
+                    style={
                         styles.countryPickerButton
                     }
-                    countryCode={countryCode}
-                    withCallingCode
-                    withCallingCodeButton={false}
-                    withFilter
-                    withFlag
-                    preferredCountries={preferredCountries}
-                    onSelect={setCountryCode}
+                    title={countryCode}
+                    onPress={displayModal}
                 />
                 <TextInput
                     style={styles.textInput}

@@ -28,7 +28,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow CMNGR to access your photos",
+          "cameraPermission": "Allow CMNGR to access your camera"
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Keyboard, TextInput, View, StyleSheet, Text, ScrollView, Alert, KeyboardAvoidingView } from "react-native";
+import { Keyboard, TextInput, View, StyleSheet, Text, ScrollView, Alert, KeyboardAvoidingView, Button } from "react-native";
 import { registerUser } from "../services/auth";
+import * as ImagePicker from 'expo-image-picker';
 import SelectDropdown from "react-native-select-dropdown";
 import { MaterialIcons, FontAwesome5, MaterialCommunityIcons, Entypo, FontAwesome } from '@expo/vector-icons';
 import Variables from "../common/constants";
@@ -61,6 +62,7 @@ export function RegisterUser({ navigation }) {
     const community = route.params.community;
     const role = route.params.role;
     const showResidents = (role != 'PRESIDENT' && role != "RESIDENT");
+    const [profilePic, setProfilePic] = useState(null);
     const [isChecked, setChecked] = useState(false);
     const [step, setStep] = useState(route.params.isNewUser ? steps.consent : route.params.status);
     const [representatives, setRepresentatives] = useState([]);
@@ -119,6 +121,22 @@ export function RegisterUser({ navigation }) {
     function validateOnlyLetters(newText) {
         return !/^[a-z_]+( [a-z_]+)*$/i.test(newText);
     }
+
+    async function pickImage() {
+        // No permissions request is necessary for launching the image library
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        console.log(result);
+
+        if (!result.canceled) {
+            setImage(result.assets[0].uri);
+        }
+    };
 
     async function register() {
         Keyboard.dismiss();
@@ -184,6 +202,8 @@ export function RegisterUser({ navigation }) {
                     <View style={styles.basicVerticalScrollContainer}>
                         <KeyboardAvoidingView behavior="padding" style={styles.basicContainer} enabled>
                             <ScrollView style={styles.basicHorizontalScrollContainer} keyboardShouldPersistTaps={'always'} persistentScrollbar={true}>
+                                <Button title="Pick an image from camera roll" onPress={pickImage} />
+                                {image && <Image source={{ uri: profilePic }} style={styles.image} />}
                                 <SelectDropdown buttonStyle={styles.dropDown} data={['FEMALE', 'MALE', 'OTHERS', 'PREFER_NOT_TO_SAY']}
                                     onSelect={(selectedItem, index) => { setGender(selectedItem); setGenderError(''); }}
                                     defaultButtonText="Select Gender"
@@ -281,7 +301,6 @@ export function RegisterUser({ navigation }) {
                                     <PhoneInput
                                         parsedDetails={setMobile}
                                         errorMessage={setMobileError}
-                                        preferredCountries={["IN"]}
                                     />
                                     {mobileError.length ? <Text style={styles.errorMessage}>{mobileError}</Text> : <></>}
                                     <FontAwesome5 name="unlock" size={20} color="white" style={styles.icons} />
@@ -473,6 +492,10 @@ const styles = StyleSheet.create({
         color: Variables.colors.red,
         marginTop: '5%',
         marginLeft: '5%'
+    },
+    profilePic: {
+        width: '40%',
+        height: '40%',
     }
 })
 
