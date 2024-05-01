@@ -1,4 +1,4 @@
-import { Button, FlatList, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
+import { Button, FlatList, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Modal } from "react-native";
 import Variables from "../common/constants";
 import { useState } from "react";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
@@ -7,16 +7,17 @@ export function PhoneInput({
     parsedDetails,
     errorMessage
 }) {
-    const codesWithNames = [{ countryCode: "+91", country: "India" }, { countryCode: "+1", country: "Usa" }]
+    const codesWithNames = [{ countryCode: "+91", country: "India", countryShortName: "IN" }, { countryCode: "+1", country: "Usa", countryShortName: "US" }]
     const [mobile, setMobile] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
+    const [countryShortForm, setCountryShortForm] = useState("IN");
     const [countryCode, setCountryCode] = useState('+91');
 
     const handleChangeText = (value) => {
         setMobile(value);
-        const isValid = isValidPhoneNumber(value, countryCode);
+        const isValid = isValidPhoneNumber(countryCode + mobile, countryShortForm);
         if (isValid) {
-            const phone = parsePhoneNumber(value, countryCode);
+            const phone = parsePhoneNumber(countryCode + mobile, countryShortForm);
             if (phone && phone.isValid()) {
                 parsedDetails(phone);
                 errorMessage('')
@@ -43,11 +44,13 @@ export function PhoneInput({
                 onRequestClose={() => {
                     setModalVisible(!modalVisible);
                 }}>
-                <FlatList
-                    data={codesWithNames}
-                    renderItem={({ item }) => <TouchableWithoutFeedback onPress={() => { setModalVisible(false); setCountryCode(item.countryCode) }}><Text>{item.countryCode} - {item.country}</Text></TouchableWithoutFeedback>}
-                    keyExtractor={item => item.countryCode}
-                />
+                <View style={styles.mobileDialog}>
+                    <FlatList
+                        data={codesWithNames}
+                        renderItem={({ item }) => <TouchableWithoutFeedback onPress={() => { setModalVisible(false); setCountryCode(item.countryCode); setCountryShortForm(item.countryShortName) }}><Text style={styles.codeStyle}>{item.countryCode} - {item.country}</Text></TouchableWithoutFeedback>}
+                        keyExtractor={item => item.countryCode}
+                    />
+                </View>
             </Modal>
             <View style={styles.row}>
                 <Button
@@ -88,6 +91,8 @@ const styles = StyleSheet.create({
         borderBottomColor: Variables.colors.white,
         paddingVertical: '15%',
         paddingHorizontal: '2%',
+        backgroundColor: Variables.colors.blue,
+        width: '10%'
     },
     errorBorder: {
         borderColor: "#FF0000",
@@ -109,4 +114,18 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 4,
     },
+    mobileDialog: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'stretch',
+        backgroundColor: Variables.colors.white,
+        margin: '8%',
+        paddingVertical: '10%',
+    },
+    codeStyle: {
+        marginVertical: '5%',
+        padding: '2%',
+        borderBottomColor: Variables.colors.blue,
+        borderBottomWidth: 1,
+    }
 });

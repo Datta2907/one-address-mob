@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Keyboard, TextInput, View, StyleSheet, Text, ScrollView, Alert, KeyboardAvoidingView, Button } from "react-native";
+import { Keyboard, TextInput, View, StyleSheet, Text, ScrollView, Alert, KeyboardAvoidingView, Button, Image } from "react-native";
 import { registerUser } from "../services/auth";
 import * as ImagePicker from 'expo-image-picker';
 import SelectDropdown from "react-native-select-dropdown";
@@ -90,8 +90,6 @@ export function RegisterUser({ navigation }) {
         if (showResidents) {
             getAllRepresentatives();
         }
-        validateOnlyLetters(route.params.firstName) ? setFirstNameError('Invalid First Name') : setFirstNameError('');
-        validateOnlyLetters(route.params.lastName) ? setLastNameError('Invalid Last Name') : setLastNameError('');
     }, [])
 
     async function getAllRepresentatives() {
@@ -130,11 +128,8 @@ export function RegisterUser({ navigation }) {
             aspect: [4, 3],
             quality: 1,
         });
-
-        console.log(result);
-
         if (!result.canceled) {
-            setImage(result.assets[0].uri);
+            setProfilePic(result.assets[0].uri);
         }
     };
 
@@ -203,7 +198,7 @@ export function RegisterUser({ navigation }) {
                         <KeyboardAvoidingView behavior="padding" style={styles.basicContainer} enabled>
                             <ScrollView style={styles.basicHorizontalScrollContainer} keyboardShouldPersistTaps={'always'} persistentScrollbar={true}>
                                 <Button title="Pick an image from camera roll" onPress={pickImage} />
-                                {image && <Image source={{ uri: profilePic }} style={styles.image} />}
+                                {profilePic && <View style={styles.centerBox} ><Image source={{ uri: profilePic }} style={styles.profilePic} /></View>}
                                 <SelectDropdown buttonStyle={styles.dropDown} data={['FEMALE', 'MALE', 'OTHERS', 'PREFER_NOT_TO_SAY']}
                                     onSelect={(selectedItem, index) => { setGender(selectedItem); setGenderError(''); }}
                                     defaultButtonText="Select Gender"
@@ -494,8 +489,14 @@ const styles = StyleSheet.create({
         marginLeft: '5%'
     },
     profilePic: {
-        width: '40%',
-        height: '40%',
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        marginTop: '5%'
+    },
+    centerBox: {
+        justifyContent: 'center',
+        alignItems: 'center'
     }
 })
 

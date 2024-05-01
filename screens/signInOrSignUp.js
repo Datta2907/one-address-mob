@@ -114,16 +114,18 @@ export function SignInOrSignUpComponent({ navigation }) {
         }
     }
 
-    function validateDetails() {
-        oauthEmailError == '' && oauthEmail ? setOauthEmailError('') : setOauthEmailError('Invalid Email');
-        community == '' ? setCommunityError('Select a community') : setCommunityError('');
-        return !communityError && !oauthEmailError;
+    function setErrors(considerEmail) {
+        considerEmail ? oauthEmailError == '' && oauthEmail ? setOauthEmailError('') : setOauthEmailError('Invalid Email') : setOauthEmailError('');
+        community == '' && role != 'PRESIDENT' ? setCommunityError('Select a community') : setCommunityError('');
+        role == '' ? setRoleError('Select a role') : setRoleError('');
     }
 
     async function sendCode() {
         Keyboard.dismiss();
-        const isDataValid = validateDetails();
-        if (isDataValid) {
+        if ((community || role == 'PRESIDENT') && oauthEmail && role) {
+            setOauthEmailError('');
+            setCommunityError('');
+            setRoleError('');
             setCurrentTab(screens.loading);
             const res = await sendVerificationCode(oauthEmail);
             if (res.success) {
@@ -131,14 +133,16 @@ export function SignInOrSignUpComponent({ navigation }) {
             } else {
                 Alert.alert(res.message, [{ text: 'OK' }])
             }
+        } else {
+            setErrors(true);
         }
     }
 
     async function signUpWithGoogle() {
         try {
-            const isDataValid = validateDetails();
-            if (isDataValid) {
-                setCurrentTab(screens.loading);
+            if ((community || role == 'PRESIDENT') && role) {
+                setCommunityError('');
+                setRoleError('');
                 await GoogleSignin.hasPlayServices();
                 const userInfo = await GoogleSignin.signIn();
                 //need to store token details in redux
@@ -157,6 +161,8 @@ export function SignInOrSignUpComponent({ navigation }) {
                         })
                     }
                 }
+            } else {
+                setErrors(false);
             }
         } catch (error) {
             if (error.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -460,7 +466,8 @@ const styles = StyleSheet.create({
     },
     dropDown: {
         width: "100%",
-        borderRadius: 5
+        borderRadius: 5,
+        marginTop: '5%',
     },
     marginForIconOnLeft: {
         marginLeft: '5%'

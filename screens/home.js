@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { StyleSheet, Text, View } from "react-native"
-import { getApplicationStatus } from "../services/home"
+import { getApplicationStatus } from "../services/user"
 
 export const HomeComponent = () => {
     useEffect(() => {
