@@ -61,7 +61,6 @@ export function RegisterUser({ navigation }) {
     const email = route.params.email;
     const community = route.params.community;
     const role = route.params.role;
-    const showResidents = (role != 'PRESIDENT' && role != "RESIDENT");
     const [profilePic, setProfilePic] = useState(null);
     const [isChecked, setChecked] = useState(false);
     const [step, setStep] = useState(route.params.isNewUser ? steps.consent : route.params.status);
@@ -77,7 +76,7 @@ export function RegisterUser({ navigation }) {
     const [mobileError, setMobileError] = useState('');
     const [gender, setGender] = useState('');
     const [genderError, setGenderError] = useState('');
-    const [isRepresentative, setIsRepresentative] = useState(undefined);
+    const [isRepresentative, setIsRepresentative] = useState(role == 'PRESIDENT' || role == 'RESIDENT');
     const [representativeError, setRepresentativeError] = useState('');
     const [displaySensitiveDetailsConsent, setDisplaySensitiveDetailsConsent] = useState(undefined);
     const [registerPassword, setRegisterPassword] = useState('');
@@ -87,7 +86,7 @@ export function RegisterUser({ navigation }) {
 
     useEffect(() => {
         setTermsAndConditions();
-        if (showResidents) {
+        if (!isRepresentative) {
             getAllRepresentatives();
         }
     }, [])
@@ -133,18 +132,37 @@ export function RegisterUser({ navigation }) {
         }
     };
 
-    async function register() {
-        Keyboard.dismiss();
+    function setErrors() {
         gender != '' ? setGenderError('') : setGenderError('Select a gender');
-        role != 'RESIDENT' && isRepresentative ? setRepresentativeError('') : setRepresentativeError('Select your flat owner or representative');
+        isRepresentative ? setRepresentativeError('') : setRepresentativeError('Select your flat owner or representative');
         firstNameError == '' && firstName ? setFirstNameError('') : setFirstNameError('Invalid First Name');
         lastNameError == '' && lastName ? setLastNameError('') : setLastNameError('Invalid Last Name');
         address != '' ? setAddressError('') : setAddressError('Address is required');
         registerPasswordError == '' && registerPassword ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage);
         registerPassword == verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
         mobile == undefined ? setMobileError('Invalid Phone Number') : setMobileError('');
-        const allVariablesValid = !genderError && !representativeError && !firstNameError && !lastNameError && !addressError && !mobileError && !registerPasswordError && !passwordMatchError;
-        if (allVariablesValid) {
+    }
+
+    async function register() {
+        Keyboard.dismiss();
+        gender != '' ? setGenderError('') : setGenderError('Select a gender');
+        isRepresentative ? setRepresentativeError('') : setRepresentativeError('Select your flat owner or representative');
+        firstNameError == '' && firstName ? setFirstNameError('') : setFirstNameError('Invalid First Name');
+        lastNameError == '' && lastName ? setLastNameError('') : setLastNameError('Invalid Last Name');
+        address != '' ? setAddressError('') : setAddressError('Address is required');
+        registerPasswordError == '' && registerPassword ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage);
+        registerPassword == verifyPassword ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match!`);
+        mobile == undefined ? setMobileError('Invalid Phone Number') : setMobileError('');
+        if (
+            gender != '' &&
+            representativeError == '' &&
+            firstNameError == '' && firstName &&
+            lastNameError == '' && lastName &&
+            address != '' &&
+            registerPasswordError == '' && registerPassword &&
+            registerPassword == verifyPassword &&
+            mobile != undefined
+        ) {
             console.log(gender, role, community, firstName, lastName, address, registerPassword, verifyPassword);
             // const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
             // if (res.success) {
@@ -152,6 +170,8 @@ export function RegisterUser({ navigation }) {
             // } else {
             //     Alert.alert('Warning', res.message, [{ text: 'OK' }])
             // }
+        } else {
+            setErrors();
         }
     }
 
@@ -206,8 +226,8 @@ export function RegisterUser({ navigation }) {
                                     rowTextForSelection={(selectedItem) => { return selectedItem }}
                                 ></SelectDropdown>
                                 {genderError.length ? <Text style={styles.errorMessage}>{genderError}</Text> : <></>}
-                                {role != 'RESIDENT' && <SelectDropdown buttonStyle={styles.dropDown} data={representatives}
-                                    onSelect={(selectedItem, index) => { setAddress(selectedItem.address); setIsRepresentative(true) }}
+                                {!isRepresentative && <SelectDropdown buttonStyle={styles.dropDown} data={representatives}
+                                    onSelect={(selectedItem, index) => { setAddress(selectedItem.address) }}
                                     defaultButtonText="Select Your Representative"
                                     buttonTextAfterSelection={(selectedItem) => { return selectedItem.name }}
                                     rowTextForSelection={(selectedItem) => { return selectedItem.name }}

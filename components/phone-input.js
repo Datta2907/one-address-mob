@@ -1,20 +1,26 @@
-import { Button, FlatList, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Modal } from "react-native";
+import { FlatList, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Modal, TouchableOpacity } from "react-native";
 import Variables from "../common/constants";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
+import phoneNumberWithCodes from "../common/mobileCodes"
 
 export function PhoneInput({
     parsedDetails,
     errorMessage
 }) {
-    const codesWithNames = [{ countryCode: "+91", country: "India", countryShortName: "IN" }, { countryCode: "+1", country: "Usa", countryShortName: "US" }]
     const [mobile, setMobile] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [countryShortForm, setCountryShortForm] = useState("IN");
     const [countryCode, setCountryCode] = useState('+91');
 
-    const handleChangeText = (value) => {
-        setMobile(value);
+    useEffect(() => {
+        const delayDebounceFnc = setTimeout(() => {
+            checkNumberValidity()
+        }, 2000);
+        return () => clearTimeout(delayDebounceFnc);
+    }, [mobile])
+
+    const checkNumberValidity = () => {
         const isValid = isValidPhoneNumber(countryCode + mobile, countryShortForm);
         if (isValid) {
             const phone = parsePhoneNumber(countryCode + mobile, countryShortForm);
@@ -29,6 +35,10 @@ export function PhoneInput({
             parsedDetails(undefined);
             errorMessage('Invalid Phone Number');
         }
+    }
+
+    const handleChangeText = (value) => {
+        setMobile(value);
     };
 
     function displayModal() {
@@ -46,24 +56,31 @@ export function PhoneInput({
                 }}>
                 <View style={styles.mobileDialog}>
                     <FlatList
-                        data={codesWithNames}
-                        renderItem={({ item }) => <TouchableWithoutFeedback onPress={() => { setModalVisible(false); setCountryCode(item.countryCode); setCountryShortForm(item.countryShortName) }}><Text style={styles.codeStyle}>{item.countryCode} - {item.country}</Text></TouchableWithoutFeedback>}
-                        keyExtractor={item => item.countryCode}
+                        data={phoneNumberWithCodes}
+                        renderItem={({ item }) =>
+                            <TouchableWithoutFeedback
+                                onPress={() => { setModalVisible(false); setCountryCode(item.dial_code); setCountryShortForm(item.code) }}>
+                                <Text style={styles.codeStyle}>{item.emoji} {item.name} ({item.dial_code})</Text>
+                            </TouchableWithoutFeedback>}
+                        keyExtractor={item => item.code}
                     />
                 </View>
             </Modal>
             <View style={styles.row}>
-                <Button
-                    style={
-                        styles.countryPickerButton
-                    }
-                    title={countryCode}
-                    onPress={displayModal}
-                />
+                <TouchableOpacity onPress={displayModal} style={styles.countryInputHolder}>
+                    <TextInput
+                        style={styles.countryInput}
+                        value={countryCode}
+                        pointerEvents="none"
+                        editable={false}
+                    />
+                </TouchableOpacity>
                 <TextInput
                     style={styles.textInput}
                     keyboardType="phone-pad"
                     autoCorrect={false}
+                    multiline={true}
+                    blurOnSubmit={true}
                     autoComplete="tel"
                     textContentType="telephoneNumber"
                     onChangeText={handleChangeText}
@@ -82,17 +99,19 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: "row",
-        alignItems: "stretch",
     },
-    countryPickerButton: {
-        alignItems: "center",
+    countryInputHolder: {
+        width: '20%',
+        marginRight: '2%'
+    },
+    countryInput: {
+        opacity: 0.5,
+        textAlign: "center",
+        textAlignVertical: "center",
         borderBottomWidth: 1,
-        marginRight: 5,
         borderBottomColor: Variables.colors.white,
-        paddingVertical: '15%',
-        paddingHorizontal: '2%',
-        backgroundColor: Variables.colors.blue,
-        width: '10%'
+        color: Variables.colors.white,
+        paddingBottom: '25%'
     },
     errorBorder: {
         borderColor: "#FF0000",
@@ -104,7 +123,8 @@ const styles = StyleSheet.create({
         color: Variables.colors.white,
         flex: 1,
         textAlign: 'center',
-        textAlignVertical: 'center'
+        textAlignVertical: 'center',
+        paddingBottom: '5%'
     },
     errorInput: {
         borderColor: "#FF0000",
@@ -127,5 +147,10 @@ const styles = StyleSheet.create({
         padding: '2%',
         borderBottomColor: Variables.colors.blue,
         borderBottomWidth: 1,
-    }
+    },
+    flag: {
+        width: 30,
+        height: 30,
+        margin: '2%'
+    },
 });
