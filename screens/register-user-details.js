@@ -12,6 +12,7 @@ import StepIndicator from "react-native-step-indicator";
 import Checkbox from "expo-checkbox";
 import { PhoneInput } from "../components/phone-input";
 import SuccessAnimation from "../components/success-animation";
+import demo from '../assets/demo.jpg';
 
 const steps = {
     consent: 0,
@@ -86,6 +87,7 @@ export function RegisterUser({ navigation }) {
 
     useEffect(() => {
         setTermsAndConditions();
+        setDefaultImage();
         if (!isRepresentative) {
             getAllRepresentatives();
         }
@@ -117,6 +119,10 @@ export function RegisterUser({ navigation }) {
 
     function validateOnlyLetters(newText) {
         return !/^[a-z_]+( [a-z_]+)*$/i.test(newText);
+    }
+
+    async function setDefaultImage() {
+        setProfilePic(Image.resolveAssetSource(demo).uri);
     }
 
     async function pickImage() {
@@ -163,7 +169,7 @@ export function RegisterUser({ navigation }) {
             registerPassword == verifyPassword &&
             mobile != undefined
         ) {
-            console.log(gender, role, community, firstName, lastName, address, registerPassword, verifyPassword);
+            console.log(gender, role, community, firstName, lastName, email, mobile, address, registerPassword, verifyPassword);
             // const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
             // if (res.success) {
             //     navigation.navigate('Home');
@@ -217,8 +223,7 @@ export function RegisterUser({ navigation }) {
                     <View style={styles.basicVerticalScrollContainer}>
                         <KeyboardAvoidingView behavior="padding" style={styles.basicContainer} enabled>
                             <ScrollView style={styles.basicHorizontalScrollContainer} keyboardShouldPersistTaps={'always'} persistentScrollbar={true}>
-                                <Button title="Pick an image from camera roll" onPress={pickImage} />
-                                {profilePic && <View style={styles.centerBox} ><Image source={{ uri: profilePic }} style={styles.profilePic} /></View>}
+                                {profilePic && <View style={styles.centerBox} ><Image source={{ uri: profilePic }} style={styles.profilePic} /><MaterialIcons name="edit" size={30} color="white" style={styles.editIcon} onPress={pickImage} /></View>}
                                 <SelectDropdown buttonStyle={styles.dropDown} data={['FEMALE', 'MALE', 'OTHERS', 'PREFER_NOT_TO_SAY']}
                                     onSelect={(selectedItem, index) => { setGender(selectedItem); setGenderError(''); }}
                                     defaultButtonText="Select Gender"
@@ -330,6 +335,7 @@ export function RegisterUser({ navigation }) {
                                         blurOnSubmit={true}
                                         selectionColor={Variables.colors.white}
                                         keyboardType="ascii-capable"
+                                        secureTextEntry={true}
                                         value={registerPassword}
                                         maxLength={15}
                                         onChangeText={newText => {
@@ -350,6 +356,7 @@ export function RegisterUser({ navigation }) {
                                         blurOnSubmit={true}
                                         selectionColor={Variables.colors.white}
                                         keyboardType="ascii-capable"
+                                        secureTextEntry={true}
                                         value={verifyPassword}
                                         maxLength={15}
                                         onChangeText={newText => {
@@ -509,14 +516,22 @@ const styles = StyleSheet.create({
         marginLeft: '5%'
     },
     profilePic: {
-        width: 200,
-        height: 200,
+        width: 180,
+        height: 180,
         borderRadius: 100,
         marginTop: '5%'
     },
     centerBox: {
         justifyContent: 'center',
         alignItems: 'center'
+    },
+    editIcon: {
+        position: 'relative',
+        bottom: 70,
+        left: 80,
+        backgroundColor: Variables.colors.green,
+        borderRadius: 30,
+        padding: '2%'
     }
 })
 
