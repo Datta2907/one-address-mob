@@ -10,6 +10,7 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import { getCommunitiesInCity } from "../services/community";
 import { useDispatch } from "react-redux";
 import { setToken } from "../redux/auth-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const screens = {
     signUp: "signUp",
@@ -109,7 +110,8 @@ export function SignInOrSignUpComponent({ navigation }) {
             setCurrentTab(screens.loading);
             const res = await loginWithPassword(loginEmail, loginPassword);
             if (res.success) {
-                dispatch(setToken({ token: res.data.token }));
+                await AsyncStorage.setItem("authToken", res.data.token);
+                dispatch(setToken());
             } else {
                 Alert.alert(res.message, [{ text: 'OK' }])
             }

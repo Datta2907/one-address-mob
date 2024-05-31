@@ -8,14 +8,19 @@ const authSlice = createSlice({
         tokenExpired: false
     },
     reducers: {
-        checkTokenValid: async (state, action) => {
-            const token = await AsyncStorage.getItem("authToken");
-            if (isTokenExpired(token)) {
+        checkTokenValid: (state, action) => {
+            const token = action.payload.token;
+            if (token) {
+                if (isTokenExpired(token)) {
+                    state.tokenExpired = true;
+                } else {
+                    state.tokenExpired = false;
+                }
+            } else {
                 state.tokenExpired = true;
             }
         },
-        setToken: async (state, action) => {
-            await AsyncStorage.setItem("authToken", action.payload.token);
+        setToken: (state, action) => {
             state.tokenExpired = false;
         }
     }
