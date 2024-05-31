@@ -7,8 +7,9 @@ import SelectDropdown from "react-native-select-dropdown";
 import SuccessAnimation from "../components/success-animation";
 import { loginWithPassword, sendVerificationCode, verifyCode, verifyGoogleIdToken } from "../services/auth";
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCommunitiesInCity } from "../services/community";
+import { useDispatch } from "react-redux";
+import { setToken } from "../redux/auth-store";
 
 const screens = {
     signUp: "signUp",
@@ -22,6 +23,7 @@ const screens = {
 const passwordErrorMessage = 'Password Must Contain \n 1.Atleast one capital alphabet.\n 2.Atleast one lower alphabet.\n 3.Atleast one number.\n 4.Atleast one special character.\n 5.A length of range [8-15]';
 
 export function SignInOrSignUpComponent({ navigation }) {
+    const dispatch = useDispatch();
     const [currentTab, setCurrentTab] = useState(screens.login);
     const [parentTab, setParentTab] = useState(screens.signIn);
     // login screen variables
@@ -107,7 +109,7 @@ export function SignInOrSignUpComponent({ navigation }) {
             setCurrentTab(screens.loading);
             const res = await loginWithPassword(loginEmail, loginPassword);
             if (res.success) {
-                await AsyncStorage.setItem("authToken", res.data.token)
+                dispatch(setToken({ token: res.data.token }));
             } else {
                 Alert.alert(res.message, [{ text: 'OK' }])
             }

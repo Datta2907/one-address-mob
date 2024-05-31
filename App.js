@@ -6,20 +6,23 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { HomeComponent } from './screens/home';
 import { useCallback, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts, LibreFranklin_500Medium } from '@expo-google-fonts/libre-franklin';
 import * as SplashScreen from 'expo-splash-screen';
 import RegisterUser from './screens/register-user-details';
-
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { tokenValid } from './redux/auth-store';
+import { store } from './redux/store';
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const Stack = createNativeStackNavigator();
   let [isLoggedIn, setIsLoggedIn] = useState(false);
+  const tokenExpired = useSelector((state) => state.userDetails.tokenExpired);
+  const dispatch = useDispatch();
   useEffect(() => {
     async function checkLoggedIn() {
-      let token = await AsyncStorage.getItem("authToken");
-      if (token) {
+      dispatch(tokenValid());
+      if (!tokenExpired) {
         setIsLoggedIn(true)
       }
     }
@@ -44,28 +47,30 @@ export default function App() {
     <View
       style={styles.mainContainer} onLayout={onLayoutRootView}>
       <StatusBar style='light' />
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
-          {isLoggedIn ?
-            <Stack.Screen
-              name='Home'
-              component={HomeComponent}
-            />
-            :
-            <Stack.Group>
+      <Provider store={store}>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
+            {isLoggedIn ?
               <Stack.Screen
-                name='signInOrSignUp'
-                component={SignInOrSignUpComponent}
-                options={{ headerShown: false }}
+                name='Home'
+                component={HomeComponent}
               />
-              <Stack.Screen
-                name='registerUser'
-                component={RegisterUser}
-                options={{ headerShown: false }}
-              />
-            </Stack.Group>}
-        </Stack.Navigator>
-      </NavigationContainer>
+              :
+              <Stack.Group>
+                <Stack.Screen
+                  name='signInOrSignUp'
+                  component={SignInOrSignUpComponent}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name='registerUser'
+                  component={RegisterUser}
+                  options={{ headerShown: false }}
+                />
+              </Stack.Group>}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </Provider>
     </View>
   );
 }

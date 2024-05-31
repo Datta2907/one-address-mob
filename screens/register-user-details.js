@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Keyboard, TextInput, View, StyleSheet, Text, ScrollView, Alert, KeyboardAvoidingView, Button, Image } from "react-native";
-import { registerUser } from "../services/auth";
+import { registerUser } from "../services/user";
 import * as ImagePicker from 'expo-image-picker';
 import SelectDropdown from "react-native-select-dropdown";
 import { MaterialIcons, FontAwesome5, MaterialCommunityIcons, Entypo, FontAwesome } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import Checkbox from "expo-checkbox";
 import { PhoneInput } from "../components/phone-input";
 import SuccessAnimation from "../components/success-animation";
 import demo from '../assets/demo.jpg';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const steps = {
     consent: 0,
@@ -79,11 +80,14 @@ export function RegisterUser({ navigation }) {
     const [genderError, setGenderError] = useState('');
     const [isRepresentative, setIsRepresentative] = useState(role == 'PRESIDENT' || role == 'RESIDENT');
     const [representativeError, setRepresentativeError] = useState('');
-    const [displaySensitiveDetailsConsent, setDisplaySensitiveDetailsConsent] = useState(undefined);
+    const [displayOrShareSensitiveDetails, setdisplayOrShareSensitiveDetails] = useState(undefined);
     const [registerPassword, setRegisterPassword] = useState('');
     const [registerPasswordError, setRegisterPasswordError] = useState('');
     const [verifyPassword, setVerifyPassword] = useState('');
     const [passwordMatchError, setPasswordMatchError] = useState('');
+    const [passVisible, setPassVisible] = useState(false);
+    const [verifyPassVisible, setVerifyPassVisible] = useState(false);
+    const [isOwner, setIsOwner] = useState(false);
 
     useEffect(() => {
         setTermsAndConditions();
@@ -119,6 +123,22 @@ export function RegisterUser({ navigation }) {
 
     function validateOnlyLetters(newText) {
         return !/^[a-z_]+( [a-z_]+)*$/i.test(newText);
+    }
+
+    function viewOrHideVerifyPassword() {
+        setVerifyPassVisible(!verifyPassVisible);
+    }
+
+    function viewOrHidePassword() {
+        setPassVisible(!passVisible);
+    }
+
+    function setOwner() {
+        setIsOwner(!isOwner);
+    }
+
+    function setSensitiveInfoConsent() {
+        setdisplayOrShareSensitiveDetails(!displayOrShareSensitiveDetails);
     }
 
     async function setDefaultImage() {
@@ -169,13 +189,30 @@ export function RegisterUser({ navigation }) {
             registerPassword == verifyPassword &&
             mobile != undefined
         ) {
-            console.log(gender, role, community, firstName, lastName, email, mobile, address, registerPassword, verifyPassword);
-            // const res = await registerUser(firstName, lastName, role, oauthEmail, registerPassword);
-            // if (res.success) {
-            //     navigation.navigate('Home');
-            // } else {
-            //     Alert.alert('Warning', res.message, [{ text: 'OK' }])
-            // }
+            const data = {
+                gender,
+                role,
+                community,
+                firstName,
+                lastName,
+                email,
+                mobile: {
+                    country: mobile.country,
+                    countryCode: mobile.countryCallingCode,
+                    number: mobile.nationalNumber
+                },
+                address,
+                password: registerPassword,
+                isRepresentative,
+                displayOrShareSensitiveDetails,
+                isOwner
+            }
+            const res = await registerUser(data);
+            if (res.success) {
+                await AsyncStorage.setItem("authToken", res.data.token);
+            } else {
+                Alert.alert('Warning', res.message, [{ text: 'OK' }])
+            }
         } else {
             setErrors();
         }
@@ -323,48 +360,71 @@ export function RegisterUser({ navigation }) {
                                         errorMessage={setMobileError}
                                     />
                                     {mobileError.length ? <Text style={styles.errorMessage}>{mobileError}</Text> : <></>}
-                                    <FontAwesome5 name="unlock" size={20} color="white" style={styles.icons} />
-                                    <TextInput
-                                        style={styles.credentialInputs}
-                                        placeholder="Set New Password"
-                                        placeholderTextColor={Variables.colors.white}
-                                        autoCapitalize="none"
-                                        autoComplete="off"
-                                        autoCorrect={false}
-                                        multiline={true}
-                                        blurOnSubmit={true}
-                                        selectionColor={Variables.colors.white}
-                                        keyboardType="ascii-capable"
-                                        secureTextEntry={true}
-                                        value={registerPassword}
-                                        maxLength={15}
-                                        onChangeText={newText => {
-                                            setRegisterPassword(newText);
-                                            isPasswordValid(newText) ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage)
-                                        }}
-                                    />
+                                    <View>
+                                        <FontAwesome5 name="unlock" size={20} color="white" style={styles.lockIcon} />
+                                        <TextInput
+                                            style={styles.credentialInputs}
+                                            placeholder="Set New Password"
+                                            placeholderTextColor={Variables.colors.white}
+                                            autoCapitalize="none"
+                                            autoComplete="off"
+                                            autoCorrect={false}
+                                            multiline={false}
+                                            blurOnSubmit={true}
+                                            selectionColor={Variables.colors.white}
+                                            keyboardType="ascii-capable"
+                                            secureTextEntry={passVisible}
+                                            value={registerPassword}
+                                            maxLength={15}
+                                            onChangeText={newText => {
+                                                setRegisterPassword(newText);
+                                                isPasswordValid(newText) ? setRegisterPasswordError('') : setRegisterPasswordError(passwordErrorMessage)
+                                            }}
+                                        />
+                                        <Entypo name={passVisible ? "eye-with-line" : "eye"} size={20} color={"white"} onPress={viewOrHidePassword} style={styles.eyeIcon} />
+                                    </View>
                                     {registerPasswordError.length ? <Text style={styles.errorMessage}>{registerPasswordError}</Text> : <></>}
-                                    <FontAwesome5 name="unlock" size={20} color="white" style={styles.icons} />
-                                    <TextInput
-                                        style={styles.credentialInputs}
-                                        placeholder="Re-type New Password"
-                                        placeholderTextColor={Variables.colors.white}
-                                        autoCapitalize="none"
-                                        autoComplete="off"
-                                        autoCorrect={false}
-                                        multiline={true}
-                                        blurOnSubmit={true}
-                                        selectionColor={Variables.colors.white}
-                                        keyboardType="ascii-capable"
-                                        secureTextEntry={true}
-                                        value={verifyPassword}
-                                        maxLength={15}
-                                        onChangeText={newText => {
-                                            setVerifyPassword(newText);
-                                            registerPassword === newText ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match`)
-                                        }}
-                                    />
+                                    <View>
+                                        <FontAwesome5 name="unlock" size={20} color="white" style={styles.lockIcon} />
+                                        <TextInput
+                                            style={styles.credentialInputs}
+                                            placeholder="Re-type New Password"
+                                            placeholderTextColor={Variables.colors.white}
+                                            autoCapitalize="none"
+                                            autoComplete="off"
+                                            autoCorrect={false}
+                                            multiline={false}
+                                            blurOnSubmit={true}
+                                            selectionColor={Variables.colors.white}
+                                            keyboardType="ascii-capable"
+                                            secureTextEntry={verifyPassVisible}
+                                            value={verifyPassword}
+                                            maxLength={15}
+                                            onChangeText={newText => {
+                                                setVerifyPassword(newText);
+                                                registerPassword === newText ? setPasswordMatchError('') : setPasswordMatchError(`Passwords don't match`)
+                                            }}
+                                        />
+                                        <Entypo name={verifyPassVisible ? "eye-with-line" : "eye"} size={20} color={"white"} onPress={viewOrHideVerifyPassword} style={styles.eyeIcon} />
+                                    </View>
                                     {passwordMatchError.length ? <Text style={styles.errorMessage}>{passwordMatchError}</Text> : <></>}
+                                    <View style={styles.checkBoxDialog}>
+                                        <Checkbox
+                                            style={styles.checkConsent}
+                                            value={displayOrShareSensitiveDetails}
+                                            onValueChange={setSensitiveInfoConsent}
+                                            color={displayOrShareSensitiveDetails ? '#4630EB' : undefined} />
+                                        <Text style={styles.baseText}>Display Sensitive Information (Phone, Image, Address).</Text>
+                                    </View>
+                                    <View style={styles.checkBoxDialog}>
+                                        <Checkbox
+                                            style={styles.checkConsent}
+                                            value={isOwner}
+                                            onValueChange={setOwner}
+                                            color={isOwner ? '#4630EB' : undefined} />
+                                        <Text style={styles.baseText}>Are You the owner ?</Text>
+                                    </View>
+                                    {displayOrShareSensitiveDetails == undefined ? <Text style={styles.errorMessage}>{"Check The applied boxes"}</Text> : <></>}
                                 </View>
                             </ScrollView>
                         </KeyboardAvoidingView>
@@ -478,6 +538,16 @@ const styles = StyleSheet.create({
         top: 40,
         left: 10
     },
+    eyeIcon: {
+        position: 'relative',
+        bottom: 40,
+        left: 280
+    },
+    lockIcon: {
+        position: 'relative',
+        top: 30,
+        left: 10
+    },
     submitButton: {
         backgroundColor: Variables.colors.green,
         color: Variables.colors.white,
@@ -532,6 +602,11 @@ const styles = StyleSheet.create({
         backgroundColor: Variables.colors.green,
         borderRadius: 30,
         padding: '2%'
+    },
+    passBox: {
+        flex: 1,
+        flexDirection: "row",
+        justifyContent: 'space-around'
     }
 })
 

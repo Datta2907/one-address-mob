@@ -10,6 +10,6 @@ export const getApplicationStatus = async () => {
     return GET(userUrl + 'application-status', null)
 }
 
-export const registerUser = async (firstName, lastName, role, email, password) => {
-    return POST(userUrl + 'register', { firstName, lastName, role, email, password });
+export const registerUser = async (data) => {
+    return POST(userUrl + 'register', data);
 }
