@@ -13,9 +13,11 @@ import { Provider, useDispatch, useSelector } from 'react-redux';
 import { checkTokenValid } from './redux/auth-store';
 import { store } from './redux/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAxiosInterceptor } from './utils/axios.instance';
 SplashScreen.preventAutoHideAsync();
 
 function App() {
+  useAxiosInterceptor();
   const Stack = createNativeStackNavigator();
   let [isLoggedIn, setIsLoggedIn] = useState(false);
   const tokenExpired = useSelector((state) => state.userDetails.tokenExpired);
