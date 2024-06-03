@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, StatusBar as statusBar } from 'react-native';
 import SignInOrSignUpComponent from './screens/signInOrSignUp';
@@ -14,11 +15,14 @@ import { checkTokenValid } from './redux/auth-store';
 import { store } from './redux/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAxiosInterceptor } from './utils/axios.instance';
+import { SettingsComponent } from './screens/settings';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 SplashScreen.preventAutoHideAsync();
 
 function App() {
   useAxiosInterceptor();
   const Stack = createNativeStackNavigator();
+  const Drawer = createDrawerNavigator();
   let [isLoggedIn, setIsLoggedIn] = useState(false);
   const tokenExpired = useSelector((state) => state.userDetails.tokenExpired);
   const dispatch = useDispatch();
@@ -56,10 +60,16 @@ function App() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
           {isLoggedIn ?
-            <Stack.Screen
-              name='Home'
-              component={HomeComponent}
-            />
+            <Drawer.Navigator>
+              <Drawer.Screen
+                name='Home'
+                component={HomeComponent}
+              />
+              <Drawer.Screen
+                name='Settings'
+                component={SettingsComponent}
+              />
+            </Drawer.Navigator>
             :
             <Stack.Group>
               <Stack.Screen

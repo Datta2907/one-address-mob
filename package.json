@@ -13,6 +13,7 @@
     "@expo/vector-icons": "^14.0.1",
     "@react-native-async-storage/async-storage": "1.21.0",
     "@react-native-google-signin/google-signin": "^10.1.2",
+    "@react-navigation/drawer": "^6.6.15",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/native-stack": "^6.9.26",
     "@reduxjs/toolkit": "^2.2.5",
@@ -35,7 +36,9 @@
     "react-native-select-dropdown": "^3.4.0",
     "react-native-step-indicator": "^1.0.3",
     "react-redux": "^9.1.2",
-    "redux": "^5.0.1"
+    "redux": "^5.0.1",
+    "react-native-gesture-handler": "~2.14.0",
+    "react-native-reanimated": "~3.6.2"
   },
   "devDependencies": {
     "@babel/core": "^7.24.5"
