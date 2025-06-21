@@ -45,7 +45,7 @@ export function SignInOrSignUpComponent({ navigation }) {
 
     useEffect(() => {
         GoogleSignin.configure({
-            webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
+            webClientId: "821851695738-u2035r45nhfncldhdmm7kkf6g8un9k0t.apps.googleusercontent.com",
             offlineAccess: true,
         })
         getCommunities();

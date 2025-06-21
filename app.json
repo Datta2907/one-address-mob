@@ -35,7 +35,8 @@
           "photosPermission": "Allow CMNGR to access your photos",
           "cameraPermission": "Allow CMNGR to access your camera"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {
