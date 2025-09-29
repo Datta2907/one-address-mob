@@ -11,6 +11,7 @@ import { getCommunitiesInCity } from "../services/community";
 import { useDispatch } from "react-redux";
 import { checkTokenValid } from "../redux/auth-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
 const screens = {
     signUp: "signUp",
@@ -44,10 +45,12 @@ export function SignInOrSignUpComponent({ navigation }) {
     const [otpError, setOtpError] = useState('');
 
     useEffect(() => {
-        GoogleSignin.configure({
-            webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
-            offlineAccess: true,
-        })
+        if (Constants.executionEnvironment != 'expoGo') {
+            GoogleSignin.configure({
+                webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
+                offlineAccess: true,
+            })
+        }
         getCommunities();
     }, [])
 
